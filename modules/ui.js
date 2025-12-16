@@ -2,7 +2,7 @@
  * UI Manager Module
  * Handles DOM updates and user interactions.
  */
-import { state } from './state.js';
+import { state, getGroups } from './state.js';
 import { getDefaultColor } from './charts.js';
 
 export function setupUIListeners() {
@@ -32,6 +32,38 @@ export function setupUIListeners() {
     document.getElementById('select-all-btn').addEventListener('click', () => {
         const ids = Array.from(document.querySelectorAll('.list-item')).map(el => el.dataset.id);
         state.selectAll(ids);
+    });
+
+    // Toggle All Folders
+    document.getElementById('toggle-all-btn').addEventListener('click', () => {
+        const groups = getGroups();
+        const folderIds = [];
+        
+        // Helper to collect folder IDs
+        function collectFolders(list) {
+            list.forEach(g => {
+                if (g.type === 'folder') {
+                    folderIds.push(g.id);
+                    if (g.children) collectFolders(g.children);
+                }
+            });
+        }
+        collectFolders(groups);
+        
+        if (folderIds.length === 0) return;
+
+        const currentExpanded = state.get().expandedIds;
+        // logic: if all found folders are already in expandedIds, then collapse all.
+        // otherwise, expand all.
+        const allExpanded = folderIds.every(id => currentExpanded.includes(id));
+        
+        if (allExpanded) {
+            state.setExpandedIds([]);
+        } else {
+            // Merge unique
+            const newSet = new Set([...currentExpanded, ...folderIds]);
+            state.setExpandedIds(Array.from(newSet));
+        }
     });
 
     // Delete Selected

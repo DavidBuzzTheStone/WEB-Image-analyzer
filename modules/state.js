@@ -131,6 +131,11 @@ export const state = {
         state.notify('expansion_change');
     },
 
+    setExpandedIds: (ids) => {
+        currentState.expandedIds = [...ids];
+        state.notify('expansion_change');
+    },
+
     setThresholds: (thresholds) => {
         currentState.thresholds = thresholds;
         state.notify('threshold_change');

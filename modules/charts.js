@@ -88,7 +88,7 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
                         type: 'scatter',
                         name: (groups.length > 1 && group.label !== sub.label) ? `${group.label} - ${sub.label}` : sub.label,
                         marker: {
-                             color: groups.length > 1 ? groupColor : PALETTE[subIndex % PALETTE.length],
+                             color: (groups.length > 1 || sub.datasets.length === 1) ? groupColor : PALETTE[subIndex % PALETTE.length],
                              symbol: SYMBOLS[subIndex % SYMBOLS.length],
                              size: 8,
                              opacity: 0.7
