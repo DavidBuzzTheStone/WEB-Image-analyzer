@@ -3,7 +3,7 @@
  * Handles DOM updates and user interactions.
  */
 import { state, getGroups } from './state.js';
-import { getDefaultColor } from './charts.js';
+import { getDefaultColor, isPointIncluded } from './charts.js';
 
 export function setupUIListeners() {
     // View Mode Toggles
@@ -369,11 +369,41 @@ function renderRecursiveGroup(group, appState, level) {
         title.className = 'title';
         title.innerText = group.label;
 
+        // Stats Calculation
+        let totalPoints = 0;
+        let includedPoints = 0;
+        
+        group.datasets.forEach(d => {
+            totalPoints += d.data.length;
+            if (appState.thresholds) {
+                includedPoints += d.data.filter(row => isPointIncluded(row, appState.thresholds)).length;
+            } else {
+                includedPoints += d.data.length;
+            }
+        });
+        
+        const percentage = totalPoints > 0 ? Math.round((includedPoints / totalPoints) * 100) : 0;
+        const statsText = `${includedPoints}/${totalPoints} (${percentage}%)`;
+
         const meta = document.createElement('div');
         meta.className = 'meta';
-        meta.innerText = `${group.datasets.length} files`;
+        meta.style.display = 'flex';
+        meta.style.justifyContent = 'space-between';
+        meta.style.width = '100%';
+        
+        const countSpan = document.createElement('span');
+        countSpan.innerText = `${group.datasets.length} files`;
+        
+        const statsSpan = document.createElement('span');
+        statsSpan.innerText = statsText;
+        statsSpan.style.marginLeft = '10px';
+        statsSpan.style.opacity = '0.8';
+        
+        meta.appendChild(countSpan);
+        meta.appendChild(statsSpan);
 
         const textDiv = document.createElement('div');
+        textDiv.style.flex = '1';
         textDiv.appendChild(title);
         textDiv.appendChild(meta);
 

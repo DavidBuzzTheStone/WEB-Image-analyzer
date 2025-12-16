@@ -279,7 +279,7 @@ function createLine(orientation, value, style) {
     }
 }
 
-function isPointIncluded(row, thresholds) {
+export function isPointIncluded(row, thresholds) {
     if (!thresholds || !thresholds.values) return true;
     const v = thresholds.values;
     
