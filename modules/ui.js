@@ -136,6 +136,22 @@ function renderSidebarList(groups, appState) {
             item.classList.add('selected');
         }
 
+        // Color Picker (New Feature)
+        const colorInput = document.createElement('input');
+        colorInput.type = 'color';
+        colorInput.className = 'color-picker';
+        colorInput.value = appState.datasetColors[group.id] || '#000000';
+        
+        // Prevent click from selecting the row
+        colorInput.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+        
+        colorInput.addEventListener('input', (e) => {
+             e.stopPropagation();
+             state.setDatasetColor(group.id, e.target.value);
+        });
+
         // Content
         const title = document.createElement('div');
         title.className = 'title';
@@ -150,6 +166,11 @@ function renderSidebarList(groups, appState) {
         textDiv.appendChild(title);
         textDiv.appendChild(meta);
 
+        // Layout: [Color] [Text]
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        
+        item.appendChild(colorInput);
         item.appendChild(textDiv);
 
         // Click Handler
@@ -158,5 +179,23 @@ function renderSidebarList(groups, appState) {
         });
 
         listContainer.appendChild(item);
+    });
+}
+
+
+// Theme Logic
+let isDarkMode = true;
+export function getIsDarkMode() { return isDarkMode; }
+
+export function setupThemeToggle() {
+    const btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+        isDarkMode = !isDarkMode;
+        document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+        btn.innerText = isDarkMode ? '☀️' : '🌙';
+        
+        // Force chart re-render to pick up new thread colors
+        state.notify();
     });
 }

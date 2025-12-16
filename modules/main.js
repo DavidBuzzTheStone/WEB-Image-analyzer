@@ -3,7 +3,7 @@
  */
 import { parseFilename, parseCSV } from './parser.js';
 import { state } from './state.js';
-import { renderUI, setupUIListeners } from './ui.js';
+import { renderUI, setupUIListeners, setupThemeToggle, getIsDarkMode } from './ui.js';
 import { renderChart } from './charts.js';
 import { getGroups } from './state.js';
 import { initUpload } from './upload.js';
@@ -11,6 +11,7 @@ import { initUpload } from './upload.js';
 // Initialize
 function init() {
     setupUIListeners();
+    setupThemeToggle();
     
     // Initialize Upload Handling
     initUpload(async (files) => {
@@ -36,10 +37,12 @@ function init() {
     });
     
     // Subscribe to state changes to re-render interface
-    state.subscribe((appState) => {
-        // Update Sidebar List
+    state.subscribe((appState, actionType) => {
+        // Update Sidebar List (Skip if just a color change to prevent picker losing focus)
         const groups = getGroups();
-        renderUI(appState, groups);
+        if (actionType !== 'color_change') {
+            renderUI(appState, groups);
+        }
         
         // Update Chart
         let groupsToPlot = [];
@@ -62,7 +65,9 @@ function init() {
                 'chart-container', 
                 groupsToPlot, 
                 appState.aggregationMode, 
-                appState.viewMode
+                appState.viewMode,
+                appState.datasetColors,
+                getIsDarkMode()
             );
         } else {
             // Clear chart or show placeholder

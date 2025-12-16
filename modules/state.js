@@ -3,8 +3,15 @@
  * Manages application state using a simple reactive pattern.
  */
 
+// Palette for default colors
+const PALETTE = [
+    '#38bdf8', '#f472b6', '#a3e635', '#fbbf24', '#c084fc', '#22d3ee', '#f87171'
+];
+let nextColorIndex = 0;
+
 const initialState = {
     datasets: [],      // Array of { id, metadata, data }
+    datasetColors: {}, // Map id -> hex color
     viewMode: 'image', // 'image', 'well', 'parameter'
     aggregationMode: 'all', // 'all', 'mean', 'median'
     comparisonMode: false,
@@ -28,20 +35,31 @@ export const state = {
             alert(`File already loaded: ${dataset.metadata.originalName}`);
             return;
         }
+        
+        // Assign default color
+        const color = PALETTE[nextColorIndex % PALETTE.length];
+        currentState.datasetColors[dataset.id] = color;
+        nextColorIndex++;
+        
         currentState.datasets.push(dataset);
         state.notify();
     },
 
+    setDatasetColor: (id, color) => {
+        currentState.datasetColors[id] = color;
+        state.notify('color_change');
+    },
+
     setDatasets: (datasets) => {
         currentState.datasets = datasets;
-        state.notify();
+        state.notify('dataset_update');
     },
 
     removeDatasets: (ids) => {
         currentState.datasets = currentState.datasets.filter(d => !ids.includes(d.id));
         // Also remove from selection
         currentState.selectedIds = currentState.selectedIds.filter(id => !ids.includes(id));
-        state.notify();
+        state.notify('dataset_update');
     },
 
     setViewMode: (mode) => {
@@ -54,12 +72,12 @@ export const state = {
             currentState.aggregationMode = 'all';
         }
         
-        state.notify();
+        state.notify('view_mode_change');
     },
 
     setAggregationMode: (mode) => {
         currentState.aggregationMode = mode;
-        state.notify();
+        state.notify('aggregation_change');
     },
 
     toggleComparisonMode: () => {
@@ -68,7 +86,7 @@ export const state = {
              // If turning off, maybe clear multi-selection or keep just the last one?
              // For now, we'll keep the selection but the UI will render differently
         }
-        state.notify();
+        state.notify('comparison_change');
     },
 
     toggleSelection: (id) => {
@@ -84,16 +102,16 @@ export const state = {
             // Single-select behavior
             currentState.selectedIds = [id];
         }
-        state.notify();
+        state.notify('selection_change');
     },
 
     selectAll: (ids) => {
         currentState.selectedIds = [...ids];
-        state.notify();
+        state.notify('selection_change');
     },
 
-    notify: () => {
-        currentState.listeners.forEach(listener => listener(state.get()));
+    notify: (actionType = 'general') => {
+        currentState.listeners.forEach(listener => listener(state.get(), actionType));
     }
 };
 

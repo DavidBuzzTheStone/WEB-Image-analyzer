@@ -26,28 +26,25 @@ const SYMBOLS = [
     'star'
 ];
 
-// Persistent color state
-const colorMap = new Map();
-let nextColorIndex = 0;
-
 /**
  * Renders the chart based on the provided groups and settings.
  * @param {string} containerId DOM ID of the chart container
  * @param {Array} groups Array of group objects from state.getGroups()
  * @param {string} aggregationMode 'all', 'mean', 'median'
  * @param {string} viewMode 'image', 'well', 'parameter'
+ * @param {Object} datasetColors Map of id -> color
+ * @param {boolean} isDarkMode
  */
-export function renderChart(containerId, groups, aggregationMode, viewMode) {
+export function renderChart(containerId, groups, aggregationMode, viewMode, datasetColors, isDarkMode = true) {
     const traces = [];
+    
+    // Theme colors
+    const textColor = isDarkMode ? '#f8fafc' : '#1e293b';
+    const gridColor = isDarkMode ? '#334155' : '#e2e8f0';
 
     groups.forEach((group) => {
-        // Stable Color Assignment
-        let groupColor = colorMap.get(group.id);
-        if (!groupColor) {
-            groupColor = PALETTE[nextColorIndex % PALETTE.length];
-            colorMap.set(group.id, groupColor);
-            nextColorIndex++;
-        }
+        // Use color from state
+        let groupColor = datasetColors && datasetColors[group.id] ? datasetColors[group.id] : '#000000';
         
         // We need to process the datasets within the group
         
@@ -91,36 +88,9 @@ export function renderChart(containerId, groups, aggregationMode, viewMode) {
             
         } else {
             // Aggregated View: Mean or Median
-            
-            // If aggregation is 'mean/median of images'
-            // We calculate one point per image.
-            
-            // If view='parameter' AND mode='aggregated well', we calculate one point per well.
-            
-            const isWellAgg = (viewMode === 'parameter' && aggregationMode.includes('well')); // Heuristic? 
-            // Actually the user interface controls 'mean', 'median'.
-            // The prompt says: "show means of images... or means of wells"
-            // We'll interpret standard 'mean' as 'mean of the lowest meaningful unit in this view'
-            
-            // Let's iterate over datasets (images)
-            const points = [];
-            
-            if (viewMode === 'parameter' && isWellModeAgg(group.datasets, aggregationMode)) {
-                 // Logic for "Mean of Wells": Group images by well, then aggregate.
-                 // IMPLEMENTATION TODO: Refine this logic based on precise UI toggle state
-            } 
-            
-            // Default Aggregation: Reduce each Image to a point.
-            // But wait, if view='parameter', we distinguish wells by symbol.
-            
             const subgroups = organizeSubgroups(group.datasets, viewMode);
             
             subgroups.forEach((sub, subIndex) => {
-                // 'sub' is a Well (in parameter view) or an Image (in well view)
-                
-                // If we want "Mean of Images", loop through 'sub.datasets' (which are images)
-                // and plot one point for each.
-                
                 const subX = [];
                 const subY = [];
                 const hoverTexts = [];
@@ -134,9 +104,6 @@ export function renderChart(containerId, groups, aggregationMode, viewMode) {
                     subY.push(valY);
                     hoverTexts.push(ds.metadata.originalName);
                 });
-                
-                // If we literally want "Mean of Wells" (one point per well), we would average the subX/subY here.
-                // For now, let's implement "Mean of Images" (one point per image) as it is the most detailed aggregation.
                 
                 traces.push({
                     x: subX,
@@ -159,23 +126,23 @@ export function renderChart(containerId, groups, aggregationMode, viewMode) {
     const layout = {
         title: {
             text: 'Integrated Intensity / NArea',
-            font: { color: '#f8fafc' }
+            font: { color: textColor }
         },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)',
         font: {
             family: 'Inter, sans-serif',
-            color: '#94a3b8'
+            color: isDarkMode ? '#94a3b8' : '#64748b'
         },
         xaxis: {
             title: 'NArea',
-            gridcolor: '#334155',
+            gridcolor: gridColor,
             rangemode: 'tozero',
             automargin: true
         },
         yaxis: {
             title: 'IntegratedInt',
-            gridcolor: '#334155',
+            gridcolor: gridColor,
             rangemode: 'tozero',
             automargin: true
         },
@@ -186,7 +153,7 @@ export function renderChart(containerId, groups, aggregationMode, viewMode) {
             y: 1.02,
             xanchor: 'right',
             x: 1,
-            font: { color: '#f8fafc' },
+            font: { color: textColor },
             bgcolor: 'rgba(0,0,0,0)',
         },
         margin: {
