@@ -86,7 +86,7 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
                         y: y,
                         mode: 'markers',
                         type: 'scatter',
-                        name: groups.length > 1 ? `${group.label} - ${sub.label}` : sub.label,
+                        name: (groups.length > 1 && group.label !== sub.label) ? `${group.label} - ${sub.label}` : sub.label,
                         marker: {
                              color: groups.length > 1 ? groupColor : PALETTE[subIndex % PALETTE.length],
                              symbol: SYMBOLS[subIndex % SYMBOLS.length],
@@ -148,7 +148,7 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
                         y: subY,
                         mode: 'markers',
                         type: 'scatter',
-                        name: groups.length > 1 ? `${group.label} - ${sub.label}` : sub.label,
+                        name: (groups.length > 1 && group.label !== sub.label) ? `${group.label} - ${sub.label}` : sub.label,
                         marker: {
                             color: groups.length > 1 ? groupColor : PALETTE[subIndex % PALETTE.length],
                             symbol: SYMBOLS[subIndex % SYMBOLS.length],

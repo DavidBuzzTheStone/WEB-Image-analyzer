@@ -3,9 +3,11 @@
  * Manages application state using a simple reactive pattern.
  */
 
-// Palette for default colors
+// Palette for default colors (30 distinct colors)
 const PALETTE = [
-    '#38bdf8', '#f472b6', '#a3e635', '#fbbf24', '#c084fc', '#22d3ee', '#f87171'
+    '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe',
+    '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075',
+    '#FFB300', '#803E75', '#FF6800', '#C10020', '#CEA262', '#817066', '#007D34', '#F6768E', '#00538A'
 ];
 let nextColorIndex = 0;
 
@@ -38,8 +40,15 @@ export const state = {
             return;
         }
         
-        // Assign default color
-        const color = PALETTE[nextColorIndex % PALETTE.length];
+        // Assign color
+        let color;
+        if (nextColorIndex < PALETTE.length) {
+            // Use palette
+            color = PALETTE[nextColorIndex];
+        } else {
+            // Palette exhausted, generate from name
+            color = generateColorFromName(dataset.id);
+        }
         currentState.datasetColors[dataset.id] = color;
         nextColorIndex++;
         
@@ -295,4 +304,15 @@ export function getSelectedGroups(groups, selectedIds) {
     });
     
     return selected;
+}
+
+function generateColorFromName(str) {
+    let hash = 0;
+    // Ensure id is string
+    const safeId = String(str);
+    for (let i = 0; i < safeId.length; i++) {
+        hash = safeId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+    return '#' + '00000'.substring(0, 6 - c.length) + c;
 }
