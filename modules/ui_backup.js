@@ -3,7 +3,6 @@
  * Handles DOM updates and user interactions.
  */
 import { state } from './state.js';
-import { getDefaultColor } from './charts.js';
 
 export function setupUIListeners() {
     // View Mode Toggles
@@ -141,7 +140,7 @@ function renderSidebarList(groups, appState) {
         const colorInput = document.createElement('input');
         colorInput.type = 'color';
         colorInput.className = 'color-picker';
-        colorInput.value = appState.datasetColors[group.id] || getDefaultColor(group.id);
+        colorInput.value = appState.datasetColors[group.id] || '#000000';
         
         // Prevent click from selecting the row
         colorInput.addEventListener('click', (e) => {

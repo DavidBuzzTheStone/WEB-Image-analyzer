@@ -135,8 +135,7 @@ body {
     cursor: pointer;
     transition: background 0.2s;
     display: flex;
-    justify-content: flex-start;
-    gap: 12px;
+    justify-content: space-between;
     align-items: center;
     font-size: 0.9rem;
 }

@@ -3,17 +3,6 @@
  * Wrapper for Plotly.js to render scientific scatter plots.
  */
 
-export function getDefaultColor(id) {
-    let hash = 0;
-    // ensure id is string
-    const safeId = String(id);
-    for (let i = 0; i < safeId.length; i++) {
-        hash = safeId.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const index = Math.abs(hash) % PALETTE.length;
-    return PALETTE[index];
-}
-
 // Colors for comparison mode
 const PALETTE = [
     '#38bdf8', // Light Blue
@@ -55,7 +44,7 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
 
     groups.forEach((group) => {
         // Use color from state
-        let groupColor = datasetColors && datasetColors[group.id] ? datasetColors[group.id] : getDefaultColor(group.id);
+        let groupColor = datasetColors && datasetColors[group.id] ? datasetColors[group.id] : '#000000';
         
         // We need to process the datasets within the group
         
