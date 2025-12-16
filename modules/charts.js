@@ -111,7 +111,7 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
                              color: '#888',
                              symbol: SYMBOLS[subIndex % SYMBOLS.length],
                              size: 6,
-                             opacity: 0.1
+                             opacity: 0.5
                         }
                     });
                 }

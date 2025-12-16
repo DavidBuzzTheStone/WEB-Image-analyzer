@@ -40,7 +40,7 @@ function init() {
     state.subscribe((appState, actionType) => {
         // Update Sidebar List (Skip if just a color change to prevent picker losing focus)
         const groups = getGroups();
-        if (actionType !== 'color_change') {
+        if (actionType !== 'color_change' && actionType !== 'threshold_value_update') {
             renderUI(appState, groups);
         }
         

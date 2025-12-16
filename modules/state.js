@@ -130,7 +130,7 @@ export const state = {
     updateThresholdValues: (values) => {
         if (currentState.thresholds) {
             currentState.thresholds.values = { ...currentState.thresholds.values, ...values };
-            state.notify('threshold_change');
+            state.notify('threshold_value_update');
         }
     },
     
