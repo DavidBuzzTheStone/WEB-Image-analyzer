@@ -47,13 +47,90 @@ const SYMBOLS = [
  * @param {boolean} isDarkMode
  */
 // Update signature
-export function renderChart(containerId, groups, aggregationMode, viewMode, datasetColors, isDarkMode = true, thresholds = null) {
-    const traces = [];
-    const shapes = [];
-    
+// Update signature
+export function renderChart(containerId, groups, aggregationMode, viewMode, datasetColors, isDarkMode = true, thresholds = null, graphType = 'scatter', graphMetric = 'int') {
     // Theme colors
     const textColor = isDarkMode ? '#f8fafc' : '#1e293b';
     const gridColor = isDarkMode ? '#334155' : '#e2e8f0';
+    const font = { family: 'Inter, sans-serif', color: isDarkMode ? '#94a3b8' : '#64748b' };
+    
+    let chartData;
+
+    try {
+        switch (graphType) {
+            case 'histogram':
+                chartData = buildHistogram(groups, viewMode, datasetColors, thresholds, graphMetric);
+                break;
+            case 'box':
+                chartData = buildBoxPlot(groups, viewMode, datasetColors, thresholds, graphMetric);
+                break;
+            case 'bar':
+                chartData = buildBarChart(groups, viewMode, datasetColors, thresholds, graphMetric);
+                break;
+            case 'scatter':
+            default:
+                chartData = buildScatterPlot(groups, aggregationMode, viewMode, datasetColors, isDarkMode, thresholds);
+                break;
+        }
+    } catch (e) {
+        console.error("Error building chart", e);
+        return;
+    }
+
+    // Common Layout Overrides
+    const layout = {
+        ...chartData.layout,
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: font,
+        showlegend: true,
+        legend: {
+            orientation: 'h',
+            yanchor: 'bottom',
+            y: 1.02,
+            xanchor: 'right',
+            x: 1,
+            font: { color: textColor },
+            bgcolor: 'rgba(0,0,0,0)',
+        },
+        margin: {
+            l: 60,
+            r: 30,
+            b: 80, 
+            t: 80 
+        }
+    };
+
+    // Apply specific axis styling
+    if (layout.xaxis) {
+        layout.xaxis.gridcolor = gridColor;
+        layout.xaxis.title = { text: layout.xaxis.title || '', font: { color: textColor } };
+    }
+    if (layout.yaxis) {
+        layout.yaxis.gridcolor = gridColor;
+        layout.yaxis.title = { text: layout.yaxis.title || '', font: { color: textColor } };
+    }
+    
+    if (chartData.layout.title) {
+        layout.title = {
+            text: chartData.layout.title,
+            font: { color: textColor }
+        };
+    }
+
+    const config = {
+        responsive: true,
+        displayModeBar: true,
+    };
+
+    Plotly.newPlot(containerId, chartData.traces, layout, config);
+}
+
+// --- BUILDERS ---
+
+function buildScatterPlot(groups, aggregationMode, viewMode, datasetColors, isDarkMode, thresholds) {
+    const traces = [];
+    const shapes = [];
 
     groups.forEach((group) => {
         let groupColor = datasetColors && datasetColors[group.id] ? datasetColors[group.id] : getDefaultColor(group.id);
@@ -119,7 +196,6 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
             
         } else {
             // Aggregated View
-            // We must filter data BEFORE calculating stats
             const subgroups = organizeSubgroups(group.datasets, viewMode);
             
             subgroups.forEach((sub, subIndex) => {
@@ -150,7 +226,7 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
                         type: 'scatter',
                         name: (groups.length > 1 && group.label !== sub.label) ? `${group.label} - ${sub.label}` : sub.label,
                         marker: {
-                            color: groups.length > 1 ? groupColor : PALETTE[subIndex % PALETTE.length],
+                            color: (groups.length > 1 || sub.datasets.length === 1) ? groupColor : PALETTE[subIndex % PALETTE.length],
                             symbol: SYMBOLS[subIndex % SYMBOLS.length],
                             size: 10,
                             line: { width: 1, color: '#fff' }
@@ -177,9 +253,9 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
             if (v.areaMin !== undefined) shapes.push(createLine('v', v.areaMin, lineStyle));
             if (v.areaMax !== undefined) shapes.push(createLine('v', v.areaMax, lineStyle));
         } else if (thresholds.type === 'density') {
-            // Find max X in data to scale the line appropriately without breaking auto-zoom
+            // Find max X in data to scale the line appropriately
             let globalMaxX = 0;
-            groups.forEach(g => {
+             groups.forEach(g => {
                 g.datasets.forEach(ds => {
                      ds.data.forEach(row => {
                          if (row.NArea > globalMaxX) globalMaxX = row.NArea;
@@ -187,7 +263,7 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
                 });
             });
             if (globalMaxX === 0) globalMaxX = 1000;
-            const lineLimitX = globalMaxX * 2; // Extend a bit beyond data
+            const lineLimitX = globalMaxX * 2; 
 
             // Density = Y / X => Y = Density * X
             if (v.densityMin !== undefined) {
@@ -209,56 +285,167 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
         }
     }
 
-    const layout = {
-        title: {
-            text: 'Integrated Intensity / NArea',
-            font: { color: textColor }
-        },
-        paper_bgcolor: 'rgba(0,0,0,0)',
-        plot_bgcolor: 'rgba(0,0,0,0)',
-        font: {
-            family: 'Inter, sans-serif',
-            color: isDarkMode ? '#94a3b8' : '#64748b'
-        },
-        xaxis: {
-            title: 'NArea',
-            gridcolor: gridColor,
-            rangemode: 'tozero',
-            automargin: true
-        },
-        yaxis: {
-            title: 'IntegratedInt',
-            gridcolor: gridColor,
-            rangemode: 'tozero',
-            automargin: true
-        },
-        showlegend: true,
-        legend: {
-            orientation: 'h',
-            yanchor: 'bottom',
-            y: 1.02,
-            xanchor: 'right',
-            x: 1,
-            font: { color: textColor },
-            bgcolor: 'rgba(0,0,0,0)',
-        },
-        margin: {
-            l: 60,
-            r: 30,
-            b: 120, // Increased bottom margin for X-axis title
-            t: 200  // Increased top margin for Legend
-        },
-        hovermode: 'closest',
-        shapes: shapes
+    return {
+        traces,
+        layout: {
+            title: 'Integrated Intensity / NArea',
+            xaxis: { title: 'NArea', rangemode: 'tozero', automargin: true },
+            yaxis: { title: 'IntegratedInt', rangemode: 'tozero', automargin: true },
+            shapes: shapes,
+            hovermode: 'closest'
+        }
     };
-    
-    const config = {
-        responsive: true,
-        displayModeBar: true,
-    };
-
-    Plotly.newPlot(containerId, traces, layout, config);
 }
+
+function buildHistogram(groups, viewMode, datasetColors, thresholds, metric) {
+    const traces = [];
+    
+    groups.forEach((group) => {
+        let groupColor = datasetColors && datasetColors[group.id] ? datasetColors[group.id] : getDefaultColor(group.id);
+        const subgroups = organizeSubgroups(group.datasets, viewMode);
+        
+        subgroups.forEach((sub, subIndex) => {
+            const values = [];
+            sub.datasets.forEach(ds => {
+                ds.data.forEach(row => {
+                    if (isPointIncluded(row, thresholds)) {
+                         values.push(getMetricValue(row, metric));
+                    }
+                });
+            });
+            
+            if (values.length > 0) {
+                traces.push({
+                    x: values,
+                    type: 'histogram',
+                    name: (groups.length > 1 && group.label !== sub.label) ? `${group.label} - ${sub.label}` : sub.label,
+                    marker: {
+                        color: (groups.length > 1 || sub.datasets.length === 1) ? groupColor : PALETTE[subIndex % PALETTE.length],
+                        opacity: 0.7
+                    }
+                });
+            }
+        });
+    });
+
+    return {
+        traces,
+        layout: {
+            title: `Histogram of ${getMetricLabel(metric)}`,
+            xaxis: { title: getMetricLabel(metric), automargin: true },
+            yaxis: { title: 'Count', automargin: true },
+            barmode: 'overlay'
+        }
+    };
+}
+
+function buildBoxPlot(groups, viewMode, datasetColors, thresholds, metric) {
+    const traces = [];
+    
+    groups.forEach((group) => {
+        let groupColor = datasetColors && datasetColors[group.id] ? datasetColors[group.id] : getDefaultColor(group.id);
+        const subgroups = organizeSubgroups(group.datasets, viewMode);
+        
+        subgroups.forEach((sub, subIndex) => {
+            const values = [];
+            sub.datasets.forEach(ds => {
+                ds.data.forEach(row => {
+                    if (isPointIncluded(row, thresholds)) {
+                         values.push(getMetricValue(row, metric));
+                    }
+                });
+            });
+            
+            if (values.length > 0) {
+                traces.push({
+                    y: values,
+                    type: 'box',
+                    boxpoints: 'all', // Jitter
+                    jitter: 0.3,
+                    pointpos: -1.8,
+                    name: (groups.length > 1 && group.label !== sub.label) ? `${group.label} - ${sub.label}` : sub.label,
+                    marker: {
+                        color: (groups.length > 1 || sub.datasets.length === 1) ? groupColor : PALETTE[subIndex % PALETTE.length]
+                    }
+                });
+            }
+        });
+    });
+
+    return {
+        traces,
+        layout: {
+            title: `Box Plot of ${getMetricLabel(metric)}`,
+            yaxis: { title: getMetricLabel(metric), automargin: true },
+        }
+    };
+}
+
+function buildBarChart(groups, viewMode, datasetColors, thresholds, metric) {
+    const traces = [];
+    
+    // Bar chart of Averages
+    
+    groups.forEach((group) => {
+        let groupColor = datasetColors && datasetColors[group.id] ? datasetColors[group.id] : getDefaultColor(group.id);
+        const subgroups = organizeSubgroups(group.datasets, viewMode);
+        
+        // If we have multiple subgroups, we might want one bar per subgroup.
+        // We can group them by trace name.
+        
+        subgroups.forEach((sub, subIndex) => {
+            const values = [];
+            sub.datasets.forEach(ds => {
+                ds.data.forEach(row => {
+                    if (isPointIncluded(row, thresholds)) {
+                         values.push(getMetricValue(row, metric));
+                    }
+                });
+            });
+            
+            if (values.length > 0) {
+                const avg = mean(values);
+                
+                traces.push({
+                    x: [(groups.length > 1 && group.label !== sub.label) ? `${group.label} - ${sub.label}` : sub.label],
+                    y: [avg],
+                    type: 'bar',
+                    name: (groups.length > 1 && group.label !== sub.label) ? `${group.label} - ${sub.label}` : sub.label,
+                    marker: {
+                        color: (groups.length > 1 || sub.datasets.length === 1) ? groupColor : PALETTE[subIndex % PALETTE.length]
+                    }
+                });
+            }
+        });
+    });
+
+    return {
+        traces,
+        layout: {
+             title: `Average ${getMetricLabel(metric)}`,
+             yaxis: { title: `Mean ${getMetricLabel(metric)}`, automargin: true }
+        }
+    };
+}
+
+function getMetricValue(row, metric) {
+    switch (metric) {
+        case 'int': return row.IntegratedInt;
+        case 'area': return row.NArea;
+        case 'density': return row.NArea !== 0 ? row.IntegratedInt / row.NArea : 0;
+        default: return 0;
+    }
+}
+
+function getMetricLabel(metric) {
+    switch (metric) {
+        case 'int': return 'Integrated Intensity';
+        case 'area': return 'Area (NArea)';
+        case 'density': return 'Intensity Density';
+        default: return '';
+    }
+}
+
 
 // Helpers
 function createLine(orientation, value, style) {

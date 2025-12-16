@@ -76,6 +76,19 @@ export function setupUIListeners() {
         }
     });
 
+    // Graph Type Toggles
+    document.querySelectorAll('#graph-type-toggle .toggle-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const mode = e.target.dataset.value;
+            state.setGraphType(mode);
+        });
+    });
+
+    // Graph Metric Select
+    document.getElementById('graph-metric-select').addEventListener('change', (e) => {
+        state.setGraphMetric(e.target.value);
+    });
+
     setupResizer();
 }
 
@@ -284,6 +297,20 @@ function updateControls(state) {
         'parameter': 'Parameter Analysis'
     };
     document.getElementById('current-view-label').innerText = labelMap[state.viewMode];
+
+    // Graph Type Controls
+    document.querySelectorAll('#graph-type-toggle .toggle-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.value === state.graphType);
+    });
+    
+    // Metric Visibility (Show if NOT scatter)
+    const metricContainer = document.getElementById('metric-select-container');
+    if (state.graphType !== 'scatter') {
+        metricContainer.style.display = 'block';
+        document.getElementById('graph-metric-select').value = state.graphMetric;
+    } else {
+        metricContainer.style.display = 'none';
+    }
 }
 
 function renderSidebarList(groups, appState) {

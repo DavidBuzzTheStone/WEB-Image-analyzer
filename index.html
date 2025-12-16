@@ -72,6 +72,26 @@
                 <div id="threshold-controls"></div>
             </div>
 
+            <!-- Graph Type -->
+            <div class="controls-section">
+                <h3>Graph Type</h3>
+                <div class="toggle-group" id="graph-type-toggle">
+                    <button class="toggle-btn active" data-value="scatter">Scatter</button>
+                    <button class="toggle-btn" data-value="histogram">Hist</button>
+                    <button class="toggle-btn" data-value="box">Box</button>
+                    <button class="toggle-btn" data-value="bar">Bar</button>
+                </div>
+                
+                <div id="metric-select-container" style="margin-top: 10px; display: none;">
+                    <div class="label-small">Metric</div>
+                    <select id="graph-metric-select" class="select-input">
+                        <option value="int">Integrated Int</option>
+                        <option value="area">Area (NArea)</option>
+                        <option value="density">Density (Int/Area)</option>
+                    </select>
+                </div>
+            </div>
+
             <div class="controls-section list-section">
                 <div class="section-header">
                     <h3>Datasets</h3>

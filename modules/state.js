@@ -20,6 +20,8 @@ const initialState = {
     selectedIds: [],   // IDs of selected items for display
     expandedIds: [],   // IDs of expanded folders
     thresholds: null,  // { type: 'density'|'area_int', values: {...}, isAdjusting: boolean }
+    graphType: 'scatter', // 'scatter', 'histogram', 'box', 'bar'
+    graphMetric: 'int',   // 'int', 'area', 'density'
     listeners: []
 };
 
@@ -34,6 +36,16 @@ export const state = {
     },
 
     // Actions
+    setGraphType: (type) => {
+        currentState.graphType = type;
+        state.notify('graph_settings_change');
+    },
+
+    setGraphMetric: (metric) => {
+        currentState.graphMetric = metric;
+        state.notify('graph_settings_change');
+    },
+
     addDataset: (dataset) => {
         if (currentState.datasets.some(d => d.id === dataset.id)) {
             alert(`File already loaded: ${dataset.metadata.originalName}`);
