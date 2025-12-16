@@ -26,6 +26,10 @@ const SYMBOLS = [
     'star'
 ];
 
+// Persistent color state
+const colorMap = new Map();
+let nextColorIndex = 0;
+
 /**
  * Renders the chart based on the provided groups and settings.
  * @param {string} containerId DOM ID of the chart container
@@ -36,19 +40,16 @@ const SYMBOLS = [
 export function renderChart(containerId, groups, aggregationMode, viewMode) {
     const traces = [];
 
-    // If we are in comparison mode, each group gets a distinct color.
-    // Otherwise, we might use color to distinguish internal subgroups (like images within a well).
-    
-    // However, the prompt says:
-    // "Comparison mode... user can select multiple graphs and merge them, assigning different colors to each."
-    // "Per well... use different symbols for the points from the different images."
-    // "Per parameter... use different symbols for the points from different wells."
-    
-    groups.forEach((group, groupIndex) => {
-        const groupColor = PALETTE[groupIndex % PALETTE.length];
+    groups.forEach((group) => {
+        // Stable Color Assignment
+        let groupColor = colorMap.get(group.id);
+        if (!groupColor) {
+            groupColor = PALETTE[nextColorIndex % PALETTE.length];
+            colorMap.set(group.id, groupColor);
+            nextColorIndex++;
+        }
         
         // We need to process the datasets within the group
-        // If aggregation is 'all', we might have multiple traces per group (one per subgroup) to support symbols
         
         if (aggregationMode === 'all') {
             // Detailed View: Plot every point

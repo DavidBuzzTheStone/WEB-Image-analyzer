@@ -24,6 +24,10 @@ export const state = {
 
     // Actions
     addDataset: (dataset) => {
+        if (currentState.datasets.some(d => d.id === dataset.id)) {
+            alert(`File already loaded: ${dataset.metadata.originalName}`);
+            return;
+        }
         currentState.datasets.push(dataset);
         state.notify();
     },
