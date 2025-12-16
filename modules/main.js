@@ -66,7 +66,8 @@ function init() {
                 appState.aggregationMode, 
                 appState.viewMode,
                 appState.datasetColors,
-                getIsDarkMode()
+                getIsDarkMode(),
+                appState.thresholds
             );
         } else {
             // Clear chart or show placeholder

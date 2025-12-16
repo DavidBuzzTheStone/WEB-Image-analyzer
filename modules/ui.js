@@ -83,6 +83,142 @@ function setupResizer() {
 export function renderUI(appState, groups) {
     updateControls(appState);
     renderSidebarList(groups, appState);
+    renderThresholdControls(appState);
+}
+
+function renderThresholdControls(stateData) {
+    const container = document.getElementById('threshold-section');
+    const controls = document.getElementById('threshold-controls');
+    
+    // Only show if graph is open (we assume if selectedIds > 0 or comparison mode has items)
+    // Actually, prompt says "only when a graph is open".
+    // Graph is open when state.selectedIds.length > 0.
+    const hasSelection = stateData.selectedIds.length > 0;
+    
+    if (!hasSelection) {
+        container.style.display = 'none';
+        return;
+    }
+    
+    container.style.display = 'block';
+    controls.innerHTML = '';
+    
+    if (!stateData.thresholds) {
+        // Show Add Button
+        const addBtn = document.createElement('button');
+        addBtn.className = 'secondary-btn';
+        addBtn.innerText = 'Add Threshold';
+        addBtn.addEventListener('click', () => {
+            state.setThresholds({
+                type: 'density', // default
+                values: {}, // empty means no limits yet
+                isAdjusting: true
+            });
+        });
+        controls.appendChild(addBtn);
+        return;
+    }
+
+    // Render Controls
+    const t = stateData.thresholds;
+    
+    // Type Selector
+    const typeSelect = document.createElement('select');
+    typeSelect.className = 'select-input';
+    typeSelect.innerHTML = `
+        <option value="density" ${t.type === 'density' ? 'selected' : ''}>Intensity Density</option>
+        <option value="area_int" ${t.type === 'area_int' ? 'selected' : ''}>Integrated Int & Area</option>
+    `;
+    typeSelect.addEventListener('change', (e) => {
+        state.setThresholds({
+            ...t,
+            type: e.target.value,
+            values: {}, // Reset values on type change? Or keep? Reset seems safer.
+            isAdjusting: true
+        });
+    });
+    controls.appendChild(typeSelect);
+    
+    // Inputs based on type
+    const inputsContainer = document.createElement('div');
+    inputsContainer.className = 'inputs-container';
+    
+    if (t.type === 'density') {
+        inputsContainer.appendChild(createInputPair('Density', 'density', t.values));
+    } else {
+        inputsContainer.appendChild(createInputPair('Int. Intensity', 'int', t.values));
+        inputsContainer.appendChild(createInputPair('NArea', 'area', t.values));
+    }
+    controls.appendChild(inputsContainer);
+    
+    // Actions
+    const actionRow = document.createElement('div');
+    actionRow.className = 'action-row';
+    
+    if (t.isAdjusting) {
+        const applyBtn = document.createElement('button');
+        applyBtn.className = 'primary-btn small';
+        applyBtn.innerText = 'Apply';
+        applyBtn.addEventListener('click', () => {
+            state.setThresholdAdjusting(false);
+        });
+        actionRow.appendChild(applyBtn);
+    } else {
+        const editBtn = document.createElement('button');
+        editBtn.className = 'secondary-btn small';
+        editBtn.innerText = 'Edit';
+        editBtn.addEventListener('click', () => {
+             state.setThresholdAdjusting(true);
+        });
+        
+        const clearBtn = document.createElement('button');
+        clearBtn.className = 'text-btn danger';
+        clearBtn.innerText = 'Remove';
+        clearBtn.addEventListener('click', () => {
+             state.setThresholds(null);
+        });
+        
+        actionRow.appendChild(editBtn);
+        actionRow.appendChild(clearBtn);
+    }
+    
+    controls.appendChild(actionRow);
+}
+
+function createInputPair(label, prefix, values) {
+    const div = document.createElement('div');
+    div.className = 'input-pair-group';
+    
+    div.innerHTML = `<div class="label-small">${label}</div>`;
+    
+    const row = document.createElement('div');
+    row.className = 'input-row';
+    
+    const minInput = document.createElement('input');
+    minInput.type = 'number';
+    minInput.placeholder = 'Min';
+    minInput.className = 'number-input';
+    minInput.value = values[`${prefix}Min`] !== undefined ? values[`${prefix}Min`] : '';
+    minInput.addEventListener('input', (e) => {
+        const val = e.target.value === '' ? undefined : Number(e.target.value);
+        state.updateThresholdValues({ [`${prefix}Min`]: val });
+    });
+    
+    const maxInput = document.createElement('input');
+    maxInput.type = 'number';
+    maxInput.placeholder = 'Max';
+    maxInput.className = 'number-input';
+    maxInput.value = values[`${prefix}Max`] !== undefined ? values[`${prefix}Max`] : '';
+    maxInput.addEventListener('input', (e) => {
+        const val = e.target.value === '' ? undefined : Number(e.target.value);
+        state.updateThresholdValues({ [`${prefix}Max`]: val });
+    });
+
+    row.appendChild(minInput);
+    row.appendChild(maxInput);
+    div.appendChild(row);
+    
+    return div;
 }
 
 function updateControls(state) {
@@ -90,7 +226,7 @@ function updateControls(state) {
     document.querySelectorAll('#view-mode-toggle .toggle-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.value === state.viewMode);
     });
-
+    
     // Aggregation Controls Visibility & State
     const aggControls = document.getElementById('aggregation-controls');
     // "only available when grouped by well or parameter"

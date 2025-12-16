@@ -455,3 +455,61 @@ body {
 .chevron.expanded {
     transform: rotate(90deg);
 }
+
+/* Threshold Controls */
+.select-input {
+    width: 100%;
+    background: var(--bg-app);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 8px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+.inputs-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.input-pair-group {
+    background: rgba(0,0,0,0.1);
+    padding: 8px;
+    border-radius: 6px;
+}
+
+.label-small {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+.input-row {
+    display: flex;
+    gap: 8px;
+}
+
+.number-input {
+    flex: 1;
+    background: var(--bg-app);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 6px;
+    border-radius: 4px;
+    width: 0; /* Let flex handle width */
+}
+
+.action-row {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.primary-btn.small, .secondary-btn.small {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    width: auto;
+}

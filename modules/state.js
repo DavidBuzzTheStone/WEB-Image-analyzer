@@ -17,6 +17,7 @@ const initialState = {
     comparisonMode: false,
     selectedIds: [],   // IDs of selected items for display
     expandedIds: [],   // IDs of expanded folders
+    thresholds: null,  // { type: 'density'|'area_int', values: {...}, isAdjusting: boolean }
     listeners: []
 };
 
@@ -119,6 +120,25 @@ export const state = {
             currentState.expandedIds.push(id);
         }
         state.notify('expansion_change');
+    },
+
+    setThresholds: (thresholds) => {
+        currentState.thresholds = thresholds;
+        state.notify('threshold_change');
+    },
+    
+    updateThresholdValues: (values) => {
+        if (currentState.thresholds) {
+            currentState.thresholds.values = { ...currentState.thresholds.values, ...values };
+            state.notify('threshold_change');
+        }
+    },
+    
+    setThresholdAdjusting: (isAdjusting) => {
+        if (currentState.thresholds) {
+            currentState.thresholds.isAdjusting = isAdjusting;
+            state.notify('threshold_change');
+        }
     },
 
     notify: (actionType = 'general') => {
