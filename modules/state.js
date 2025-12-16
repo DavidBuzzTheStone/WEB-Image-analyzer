@@ -187,7 +187,7 @@ export function getGroups() {
             // Leaf
             groups[param].children[well].children.push({
                 id: d.id,
-                label: d.metadata.originalName,
+                label: `Image ${d.metadata.imageNumber}`,
                 type: 'leaf',
                 datasets: [d],
                 metadata: d.metadata
