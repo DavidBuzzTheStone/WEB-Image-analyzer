@@ -415,3 +415,43 @@ body {
     justify-content: space-between;
     padding-right: 10px;
 }
+
+/* Hierarchical Groups */
+.group-header {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    font-weight: 700;
+    margin-top: 12px;
+    margin-bottom: 4px;
+    padding: 4px 0;
+    letter-spacing: 0.05em;
+}
+
+.group-container {
+    margin-bottom: 8px;
+}
+
+/* Interactive Folder Headers */
+.group-header.interactable {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+}
+
+.group-header.interactable:hover {
+    color: var(--text-primary);
+}
+
+.chevron {
+    display: inline-block;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    transition: transform 0.2s ease;
+}
+
+.chevron.expanded {
+    transform: rotate(90deg);
+}

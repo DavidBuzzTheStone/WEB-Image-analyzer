@@ -16,6 +16,7 @@ const initialState = {
     aggregationMode: 'all', // 'all', 'mean', 'median'
     comparisonMode: false,
     selectedIds: [],   // IDs of selected items for display
+    expandedIds: [],   // IDs of expanded folders
     listeners: []
 };
 
@@ -110,6 +111,16 @@ export const state = {
         state.notify('selection_change');
     },
 
+    toggleExpansion: (id) => {
+        const index = currentState.expandedIds.indexOf(id);
+        if (index > -1) {
+            currentState.expandedIds.splice(index, 1);
+        } else {
+            currentState.expandedIds.push(id);
+        }
+        state.notify('expansion_change');
+    },
+
     notify: (actionType = 'general') => {
         currentState.listeners.forEach(listener => listener(state.get(), actionType));
     }
@@ -117,41 +128,102 @@ export const state = {
 
 /**
  * Helper to group datasets based on current view mode
- * @returns {Array} grouped items { id, label, datasets[] }
+ * @returns {Array} grouped items { id, label, type, children?, datasets, metadata }
  */
 export function getGroups() {
     const s = state.get();
     const { datasets, viewMode } = s;
 
     if (viewMode === 'image') {
-        return datasets.map(d => ({
-            id: d.id,
-            label: d.metadata.originalName, // Or shorter name
-            datasets: [d],
-            metadata: d.metadata
+        // Hierarchy: Parameter -> Well -> Image (Leaf)
+        const groups = {}; // Key: Parameter
+
+        datasets.forEach(d => {
+            const param = d.metadata.parameter || 'Unknown Parameter';
+            const well = d.metadata.well || 'Unknown Well';
+
+            if (!groups[param]) {
+                groups[param] = {
+                    id: `param_${param}`,
+                    label: param,
+                    type: 'folder',
+                    children: {}, // Key: Well
+                    datasets: [] // Aggregated datasets for this folder
+                };
+            }
+            groups[param].datasets.push(d);
+
+            if (!groups[param].children[well]) {
+                groups[param].children[well] = {
+                    id: `well_${param}_${well}`,
+                    label: `Well ${well}`,
+                    type: 'folder',
+                    children: [], // Array of leaves
+                    datasets: []
+                };
+            }
+            groups[param].children[well].datasets.push(d);
+
+            // Leaf
+            groups[param].children[well].children.push({
+                id: d.id,
+                label: d.metadata.originalName,
+                type: 'leaf',
+                datasets: [d],
+                metadata: d.metadata
+            });
+        });
+
+        // Convert objects to arrays
+        return Object.values(groups).map(paramGroup => ({
+            ...paramGroup,
+            children: Object.values(paramGroup.children).map(wellGroup => ({
+                ...wellGroup,
+                // Sort wells? Strings for now.
+            }))
         }));
     }
 
     if (viewMode === 'well') {
-        // Group by Parameter + Well
-        const groups = {};
+        // Hierarchy: Parameter -> Well (Leaf)
+        const groups = {}; // Key: Parameter
+
         datasets.forEach(d => {
-            const key = `${d.metadata.parameter}__${d.metadata.well}`;
-            if (!groups[key]) {
-                groups[key] = {
-                    id: key,
-                    label: `${d.metadata.parameter} - ${d.metadata.well}`,
-                    datasets: [],
-                    metadata: d.metadata // Keep representative metadata
+            const param = d.metadata.parameter || 'Unknown Parameter';
+            const well = d.metadata.well || 'Unknown Well';
+            const key = `${param}__${well}`;
+
+            if (!groups[param]) {
+                groups[param] = {
+                    id: `param_${param}`,
+                    label: param,
+                    type: 'folder',
+                    children: {}, // Key: Well (Composite ID)
+                    datasets: []
                 };
             }
-            groups[key].datasets.push(d);
+            groups[param].datasets.push(d);
+
+            if (!groups[param].children[key]) {
+                groups[param].children[key] = {
+                    id: key,
+                    label: `Well ${well}`,
+                    type: 'leaf',
+                    datasets: [],
+                    metadata: d.metadata // Representative
+                };
+            }
+            groups[param].children[key].datasets.push(d);
         });
-        return Object.values(groups);
+
+        return Object.values(groups).map(paramGroup => ({
+            ...paramGroup,
+            children: Object.values(paramGroup.children)
+        }));
     }
 
     if (viewMode === 'parameter') {
-        // Group by Parameter only
+        // Flat list of Parameters
         const groups = {};
         datasets.forEach(d => {
             const key = d.metadata.parameter;
@@ -159,6 +231,7 @@ export function getGroups() {
                 groups[key] = {
                     id: key,
                     label: d.metadata.parameter,
+                    type: 'leaf',
                     datasets: [],
                     metadata: d.metadata
                 };
@@ -169,4 +242,37 @@ export function getGroups() {
     }
 
     return [];
+}
+
+/**
+ * Recursively find selected groups in hierarchy
+ * @param {Array} groups 
+ * @param {Array} selectedIds 
+ * @returns {Array} List of selected group objects
+ */
+export function getSelectedGroups(groups, selectedIds) {
+    let selected = [];
+    
+    groups.forEach(group => {
+        if (selectedIds.includes(group.id)) {
+            selected.push(group);
+        }
+        
+        if (group.children) {
+            // Recurse depending on structure.
+            // In our current 'getGroups', children is an array or object?
+            // In 'getGroups' implementation:
+            // Top level maps to array of paramGroups.
+            // paramGroup.children is array of wellGroups (in Image mode) or leaves (in Well mode).
+            
+            // Note: In `getGroups` earlier, we converted everything to arrays before returning.
+            // So `group.children` is always an array if it exists.
+            
+            if (Array.isArray(group.children)) {
+                selected = selected.concat(getSelectedGroups(group.children, selectedIds));
+            }
+        }
+    });
+    
+    return selected;
 }

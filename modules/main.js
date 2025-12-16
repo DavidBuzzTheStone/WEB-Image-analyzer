@@ -5,7 +5,7 @@ import { parseFilename, parseCSV } from './parser.js';
 import { state } from './state.js';
 import { renderUI, setupUIListeners, setupThemeToggle, getIsDarkMode } from './ui.js';
 import { renderChart } from './charts.js';
-import { getGroups } from './state.js';
+import { getGroups, getSelectedGroups } from './state.js';
 import { initUpload } from './upload.js';
 
 // Initialize
@@ -48,12 +48,11 @@ function init() {
         let groupsToPlot = [];
         
         if (appState.comparisonMode) {
-             groupsToPlot = groups.filter(g => appState.selectedIds.includes(g.id));
+             groupsToPlot = getSelectedGroups(groups, appState.selectedIds);
         } else {
              if (appState.selectedIds.length > 0) {
-                 const selectedId = appState.selectedIds[0];
-                 const selectedGroup = groups.find(g => g.id === selectedId);
-                 if (selectedGroup) groupsToPlot = [selectedGroup];
+                 const selected = getSelectedGroups(groups, appState.selectedIds);
+                 if (selected.length > 0) groupsToPlot = [selected[0]];
              }
         }
         

@@ -128,26 +128,69 @@ function renderSidebarList(groups, appState) {
     }
 
     groups.forEach(group => {
+        listContainer.appendChild(renderRecursiveGroup(group, appState, 0));
+    });
+}
+
+function renderRecursiveGroup(group, appState, level) {
+    if (group.type === 'folder') {
+        const isExpanded = appState.expandedIds.includes(group.id);
+        
+        // Folder Container
+        const container = document.createElement('div');
+        container.className = 'group-container';
+        
+        // Header
+        const header = document.createElement('div');
+        header.className = 'group-header interactable';
+        header.style.paddingLeft = `${level * 12}px`;
+        
+        // Chevron
+        const chevron = document.createElement('span');
+        chevron.className = `chevron ${isExpanded ? 'expanded' : ''}`;
+        chevron.innerText = '▶'; 
+        // We can use transform rotate for animation
+        
+        const label = document.createElement('span');
+        label.innerText = group.label;
+        
+        header.appendChild(chevron);
+        header.appendChild(label);
+        
+        // Toggle Handler
+        header.addEventListener('click', () => {
+            state.toggleExpansion(group.id);
+        });
+
+        container.appendChild(header);
+        
+        // Children (Render only if expanded)
+        if (isExpanded && group.children && group.children.length > 0) {
+            group.children.forEach(child => {
+                container.appendChild(renderRecursiveGroup(child, appState, level + 1));
+            });
+        }
+        
+        return container;
+    } else {
+        // Leaf Item (Selectable)
         const item = document.createElement('div');
         item.className = 'list-item';
         item.dataset.id = group.id;
+        item.style.paddingLeft = `${(level * 12) + 10}px`; // Base padding + Indent
         
         // Selection State
         if (appState.selectedIds.includes(group.id)) {
             item.classList.add('selected');
         }
 
-        // Color Picker (New Feature)
+        // Color Picker
         const colorInput = document.createElement('input');
         colorInput.type = 'color';
         colorInput.className = 'color-picker';
         colorInput.value = appState.datasetColors[group.id] || getDefaultColor(group.id);
         
-        // Prevent click from selecting the row
-        colorInput.addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-        
+        colorInput.addEventListener('click', (e) => e.stopPropagation());
         colorInput.addEventListener('input', (e) => {
              e.stopPropagation();
              state.setDatasetColor(group.id, e.target.value);
@@ -160,15 +203,16 @@ function renderSidebarList(groups, appState) {
 
         const meta = document.createElement('div');
         meta.className = 'meta';
-        // Show count
         meta.innerText = `${group.datasets.length} files`;
 
         const textDiv = document.createElement('div');
         textDiv.appendChild(title);
         textDiv.appendChild(meta);
 
-        // Layout: [Color] [Text]
+        // Layout
         item.style.display = 'flex';
+        item.style.justifyContent = 'flex-start';
+        item.style.gap = '12px';
         item.style.alignItems = 'center';
         
         item.appendChild(colorInput);
@@ -178,9 +222,9 @@ function renderSidebarList(groups, appState) {
         item.addEventListener('click', () => {
              state.toggleSelection(group.id);
         });
-
-        listContainer.appendChild(item);
-    });
+        
+        return item;
+    }
 }
 
 
