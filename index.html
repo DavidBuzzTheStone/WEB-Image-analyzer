@@ -57,6 +57,15 @@
             </div>
 
             <div class="controls-section">
+                <div class="section-header">
+                    <h3>Saved Comparisons</h3>
+                </div>
+                <div id="saved-comparisons-list">
+                    <div class="empty-state small">No saved comparisons</div>
+                </div>
+            </div>
+
+            <div class="controls-section">
                 <h3>View Mode</h3>
                 <div class="toggle-group" id="view-mode-toggle">
                     <button class="toggle-btn active" data-value="image">Image</button>
@@ -109,6 +118,11 @@
                         <button id="delete-btn" class="text-btn danger">Delete</button>
                     </div>
                 </div>
+                
+                <div style="margin-bottom: 10px; display: flex; gap: 5px;">
+                    <button id="compare-mode-btn" class="secondary-btn small" style="flex:1">Enable Comparison</button>
+                    <button id="save-comparison-btn" class="secondary-btn small" style="flex:1" disabled>Save Comp.</button>
+                </div>
                 <div id="dataset-list" class="scrollable-list">
                     <!-- List items injected here -->
                     <div class="empty-state">No files loaded</div>
@@ -133,7 +147,7 @@
                     <span id="current-view-label">Analysis View</span>
                 </div>
                 <div class="top-actions">
-                    <button id="compare-mode-btn" class="secondary-btn">Enable Comparison</button>
+                    <!-- Moved to sidebar -->
                 </div>
             </header>
 

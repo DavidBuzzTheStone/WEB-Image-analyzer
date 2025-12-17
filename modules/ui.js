@@ -89,6 +89,14 @@ export function setupUIListeners() {
         state.setGraphMetric(e.target.value);
     });
 
+    // Save Comparison
+    document.getElementById('save-comparison-btn').addEventListener('click', () => {
+        const name = prompt('Name for this comparison:');
+        if (name) {
+            state.saveComparison(name);
+        }
+    });
+
     setupResizer();
 }
 
@@ -129,6 +137,64 @@ export function renderUI(appState, groups) {
     updateControls(appState);
     renderSidebarList(groups, appState);
     renderThresholdControls(appState);
+    renderSavedComparisons(appState);
+}
+
+function renderSavedComparisons(stateData) {
+    const list = document.getElementById('saved-comparisons-list');
+    
+    if (!stateData.savedComparisons || stateData.savedComparisons.length === 0) {
+        list.innerHTML = '<div class="empty-state small">No saved comparisons</div>';
+        return;
+    }
+    
+    list.innerHTML = '';
+    
+    stateData.savedComparisons.forEach(comp => {
+        const row = document.createElement('div');
+        row.className = 'list-item';
+        row.style.display = 'flex';
+        row.style.justifyContent = 'space-between';
+        row.style.alignItems = 'center';
+        row.style.cursor = 'pointer';
+        row.style.padding = '6px 8px';
+        
+        const label = document.createElement('span');
+        label.innerText = comp.name;
+        
+        if (stateData.viewMode === comp.viewMode && 
+            stateData.comparisonMode && 
+            JSON.stringify(stateData.selectedIds.sort()) === JSON.stringify(comp.selectedIds.sort())) {
+            row.classList.add('selected');
+        }
+        
+        const delBtn = document.createElement('button');
+        delBtn.innerHTML = '🗑';
+        delBtn.className = 'text-btn danger small';
+        delBtn.style.padding = '0 4px';
+        delBtn.onclick = (e) => {
+            e.stopPropagation();
+            if (confirm(`Delete comparison "${comp.name}"?`)) {
+                state.deleteComparison(comp.id);
+            }
+        };
+        
+        row.onclick = () => {
+             // Restore comparison
+             if (stateData.viewMode !== comp.viewMode) {
+                 state.setViewMode(comp.viewMode);
+                 // setViewMode triggers notification, but we need to proceed. 
+                 // Actually synchronous update in state. 
+             }
+             
+             state.setComparisonMode(true);
+             state.setSelectedIds(comp.selectedIds);
+        };
+        
+        row.appendChild(label);
+        row.appendChild(delBtn);
+        list.appendChild(row);
+    });
 }
 
 function renderThresholdControls(stateData) {
@@ -289,6 +355,12 @@ function updateControls(state) {
     const compareBtn = document.getElementById('compare-mode-btn');
     compareBtn.classList.toggle('active', state.comparisonMode);
     compareBtn.innerText = state.comparisonMode ? 'End Comparison' : 'Enable Comparison';
+    
+    // Save Comparison Button
+    const saveCompBtn = document.getElementById('save-comparison-btn');
+    if (saveCompBtn) {
+        saveCompBtn.disabled = !state.comparisonMode;
+    }
     
     // Label
     const labelMap = {

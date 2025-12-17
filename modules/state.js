@@ -22,6 +22,7 @@ const initialState = {
     thresholds: null,  // { type: 'density'|'area_int', values: {...}, isAdjusting: boolean }
     graphType: 'scatter', // 'scatter', 'histogram', 'box', 'bar'
     graphMetric: 'int',   // 'int', 'area', 'density'
+    savedComparisons: [], 
     listeners: []
 };
 
@@ -170,6 +171,44 @@ export const state = {
             currentState.thresholds.isAdjusting = isAdjusting;
             state.notify('threshold_change');
         }
+    },
+
+    setComparisonMode: (isActive) => {
+        currentState.comparisonMode = isActive;
+        if (!isActive) {
+             // Optional: clear selection logic if desired
+        }
+        state.notify('comparison_change');
+    },
+
+    saveComparison: (name) => {
+        const comparison = {
+            id: Date.now(),
+            name: name,
+            viewMode: currentState.viewMode,
+            selectedIds: [...currentState.selectedIds],
+            // Optional: Store colors if specific to this comparison?
+        };
+        currentState.savedComparisons = currentState.savedComparisons || [];
+        currentState.savedComparisons.push(comparison);
+        state.notify('saved_comparison_update');
+    },
+
+    deleteComparison: (id) => {
+        if (currentState.savedComparisons) {
+            currentState.savedComparisons = currentState.savedComparisons.filter(c => c.id !== id);
+            state.notify('saved_comparison_update');
+        }
+    },
+
+    setSavedComparisons: (list) => {
+        currentState.savedComparisons = list || [];
+        state.notify('saved_comparison_update');
+    },
+
+    setSelectedIds: (ids) => {
+        currentState.selectedIds = [...ids];
+        state.notify('selection_change');
     },
 
     notify: (actionType = 'general') => {

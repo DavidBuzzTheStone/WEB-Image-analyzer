@@ -34,13 +34,18 @@ body {
 
 /* Sidebar */
 .sidebar {
-    width: 300px;
+    width: 320px;
     background-color: var(--bg-sidebar);
     border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
-    padding: 1.5rem;
-    gap: 2rem;
+    padding: 20px;
+    gap: 2rem; /* Restore spacing */
+    flex-shrink: 0;
+    z-index: 10;
+    overflow-y: auto;
+    height: 100vh;
+    box-sizing: border-box; /* Ensure padding doesn't add to height causing double scrollbar issues if any */
 }
 
 .brand {
@@ -101,10 +106,9 @@ body {
 
 /* List */
 .list-section {
-    flex: 1;
+    /* Allow it to grow, don't constrain height */
     display: flex;
     flex-direction: column;
-    overflow: hidden;
 }
 
 .section-header {
@@ -123,9 +127,7 @@ body {
 }
 
 .scrollable-list {
-    flex: 1;
-    overflow-y: auto;
-    padding-right: 4px;
+    /* overflow-y handled by sidebar */
 }
 
 .list-item {

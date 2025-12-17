@@ -165903,11 +165903,14 @@
     "param__fluoro__well__A__exp200__int55__no3.csv": "#8A78B9",
     "param__fluoro__well__A__exp200__int55__no4.csv": "#98903A"
   },
-  "viewMode": "image",
+  "viewMode": "well",
   "aggregationMode": "all",
   "comparisonMode": false,
   "selectedIds": [],
-  "expandedIds": [],
+  "expandedIds": [
+    "param_2T 2C",
+    "well_2T 2C_A"
+  ],
   "thresholds": null,
   "graphType": "scatter",
   "graphMetric": "int"
