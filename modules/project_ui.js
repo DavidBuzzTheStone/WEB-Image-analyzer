@@ -1,11 +1,13 @@
 /**
  * UI Logic for Project Manager (Modal, etc)
  */
-import { loadProjectTree, createFolder, saveProject, loadProject, prepareSaveData, deleteItem } from './project.js';
+import { loadProjectTree, createFolder, saveProject, loadProject, prepareSaveData, deleteItem, copyItems, moveItems } from './project.js';
 import { state } from './state.js';
 
 let currentPath = ''; 
-let selectedItem = null; 
+let selectedItem = null; // Primary selection (last clicked)
+let selectedItems = []; // Multi-selection
+let clipboard = { items: [], operation: null }; // { items: [], operation: 'copy'|'cut' } 
 
 export function setupProjectListeners() {
     // Save (Quick Save or Save As)
@@ -89,6 +91,42 @@ export function setupProjectListeners() {
                 openModal('save');
             }
         }
+
+        // Clipboard
+        // Only if modal is open?
+        if (document.querySelector('.modal-overlay')) {
+            // Copy
+            if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
+                if (selectedItems.length > 0) {
+                    clipboard = { items: [...selectedItems], operation: 'copy' };
+                    updateClipboardUI();
+                    console.log('Copied', selectedItems.length);
+                }
+            }
+            // Cut
+            if ((e.metaKey || e.ctrlKey) && e.key === 'x') {
+                if (selectedItems.length > 0) {
+                    clipboard = { items: [...selectedItems], operation: 'cut' };
+                    updateClipboardUI();
+                    console.log('Cut', selectedItems.length);
+                }
+            }
+            // Paste
+            if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
+                 if (clipboard.items.length > 0) {
+                     handlePaste();
+                 }
+            }
+            // Delete
+            if (e.key === 'Backspace' || e.key === 'Delete') {
+                 if (selectedItems.length > 0) {
+                     // Check if not editing name input
+                     if (document.activeElement.tagName !== 'INPUT') {
+                        handleDelete(selectedItems);
+                     }
+                 }
+            }
+        }
     });
 }
 
@@ -137,7 +175,7 @@ function openModal(mode) {
     const tools = document.createElement('div');
     tools.style.display = 'flex'; 
     tools.style.marginBottom = '10px';
-    tools.style.justifyContent = 'space-between';
+    tools.style.alignItems = 'center';
     
     if (mode === 'save') {
         const newFolderBtn = document.createElement('button');
@@ -155,10 +193,25 @@ function openModal(mode) {
             }
         };
         tools.appendChild(newFolderBtn);
-    } else {
-        // Spacer if load mode
-        tools.appendChild(document.createElement('div'));
-    }
+    } 
+
+    const pasteBtn = document.createElement('button');
+    pasteBtn.id = 'browser-paste-btn';
+    pasteBtn.className = 'secondary-btn small';
+    pasteBtn.style.display = 'none';
+    pasteBtn.style.marginLeft = '10px';
+    pasteBtn.onclick = handlePaste;
+    tools.appendChild(pasteBtn);
+    
+    // Initial update
+    updateClipboardUI(); 
+    
+    const note = document.createElement('span');
+    note.style.fontSize = '0.75rem';
+    note.style.color = 'var(--text-secondary)';
+    note.style.marginLeft = 'auto';
+    note.innerText = 'Hold Cmd/Ctrl to Select Multiple';
+    tools.appendChild(note);
 
     // Path Display
     const pathDisplay = document.createElement('div');
@@ -262,7 +315,63 @@ function openModal(mode) {
     };
 }
 
+let activeContext = null;
+
+function updateClipboardUI() {
+    const btn = document.getElementById('browser-paste-btn');
+    if (btn) {
+        if (clipboard.items.length > 0) {
+            btn.style.display = 'inline-block';
+            btn.innerText = `📋 Paste ${clipboard.items.length}`;
+            // Different visual for Cut vs Copy?
+            if (clipboard.operation === 'cut') {
+                btn.innerText = `✂️ Paste ${clipboard.items.length}`;
+            }
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+}
+
+async function handlePaste() {
+    if (!clipboard.items.length || !activeContext) return;
+    try {
+        const dest = currentPath;
+        const items = clipboard.items.map(i => i.path);
+        
+        let res;
+        if (clipboard.operation === 'copy') {
+             res = await copyItems(items, dest);
+        } else {
+             res = await moveItems(items, dest);
+        }
+        
+        if (res.error) {
+            alert(res.error);
+        } else {
+            if (clipboard.operation === 'cut') clipboard = { items: [], operation: null };
+            updateClipboardUI();
+            refreshBrowser(activeContext.container, currentPath, activeContext.mode, activeContext.nameInput, activeContext.actionBtn, activeContext.pathDisplay);
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Paste failed');
+    }
+}
+
+async function handleDelete(items) {
+    if (!activeContext) return;
+    if (confirm(`Delete ${items.length} items?`)) {
+        for (const item of items) {
+             await deleteItem(item.path);
+        }
+        selectedItems = [];
+        refreshBrowser(activeContext.container, currentPath, activeContext.mode, activeContext.nameInput, activeContext.actionBtn, activeContext.pathDisplay);
+    }
+}
+
 async function refreshBrowser(container, pathStr, mode, nameInput, actionBtn, pathDisplay) {
+    activeContext = { container, mode, nameInput, actionBtn, pathDisplay };
     container.innerHTML = '<div style="padding:20px; text-align:center; color:#888;">Loading...</div>';
     
     // Update path display
@@ -310,7 +419,8 @@ function renderBrowserItems(container, items, pathStr, mode, nameInput, actionBt
             const parts = pathStr.split('/');
             parts.pop();
             currentPath = parts.join('/');
-            refreshBrowser(container, currentPath, mode, nameInput, actionBtn, pathDisplay);
+            selectedItems = [];
+             refreshBrowser(container, currentPath, mode, nameInput, actionBtn, pathDisplay);
         };
         container.appendChild(upDiv);
     }
@@ -329,67 +439,103 @@ function renderBrowserItems(container, items, pathStr, mode, nameInput, actionBt
     items.forEach(item => {
         const div = document.createElement('div');
         div.className = 'browser-item';
+        div.dataset.path = item.path;
+        if (selectedItems.some(i => i.path === item.path)) div.classList.add('selected');
         
         const icon = item.type === 'folder' ? '📁' : '📄';
         
-        // Structure: Left (Icon + Name), Right (Delete Btn)
+        // Structure: Left (Icon + Name), Right (Actions)
         div.innerHTML = `
             <div class="browser-item-left">
                 <span class="icon">${icon}</span>
                 <span>${item.name}</span>
             </div>
-            <button class="delete-btn" title="Delete">🗑</button>
+            <div class="browser-item-actions" style="display:flex; gap:6px;">
+                 <button class="text-btn small copy-btn" title="Copy" style="padding:4px 6px; background: var(--bg-tertiary); border-radius: 4px; border: 1px solid var(--border-color);">📋</button>
+                 <button class="text-btn small cut-btn" title="Cut" style="padding:4px 6px; background: var(--bg-tertiary); border-radius: 4px; border: 1px solid var(--border-color);">✂️</button>
+                 <button class="text-btn small delete-btn" title="Delete" style="padding:4px 6px; background: var(--bg-tertiary); border-radius: 4px; border: 1px solid var(--border-color); color:#ef4444;">🗑</button>
+            </div>
         `;
         
-        const deleteBtn = div.querySelector('.delete-btn');
-        deleteBtn.onclick = async (e) => {
-            e.stopPropagation(); // Prevent selection
-            if (confirm(`Permanently delete "${item.name}"? This cannot be undone.`)) {
-                try {
-                    const result = await deleteItem(item.path); 
-                    if (result.error) {
-                        alert(result.error);
-                    } else {
-                        refreshBrowser(container, pathStr, mode, nameInput, actionBtn, pathDisplay);
-                    }
-                } catch (err) {
-                    console.error(err);
-                    alert('Failed to delete item. Server might be unreachable.');
-                }
-            }
+        // Add listeners
+        const copyBtn = div.querySelector('.copy-btn');
+        copyBtn.onclick = (e) => {
+            e.stopPropagation();
+            clipboard = { items: [item], operation: 'copy' };
+            updateClipboardUI();
+            const original = copyBtn.innerText;
+            copyBtn.innerText = '✅';
+            setTimeout(() => copyBtn.innerText = original, 1000);
         };
 
-        div.onclick = () => {
-             // Handle selection
-             document.querySelectorAll('.browser-item').forEach(el => el.classList.remove('selected'));
-             div.classList.add('selected');
-             selectedItem = item;
-             
-             if (item.type === 'folder') {
-                 // Open folder immediately
-                 currentPath = item.path.replace(/\\/g, '/');
-                 refreshBrowser(container, currentPath, mode, nameInput, actionBtn, pathDisplay);
+        const cutBtn = div.querySelector('.cut-btn');
+        cutBtn.onclick = (e) => {
+            e.stopPropagation();
+            clipboard = { items: [item], operation: 'cut' };
+            updateClipboardUI();
+            const original = cutBtn.innerText;
+            cutBtn.innerText = '✅';
+            setTimeout(() => cutBtn.innerText = original, 1000);
+        };
+        
+        const delBtn = div.querySelector('.delete-btn');
+        delBtn.onclick = (e) => {
+            e.stopPropagation();
+            handleDelete([item]);
+        };
+        
+        div.onclick = (e) => {
+             if (e.metaKey || e.ctrlKey) {
+                 // Multi-select toggle
+                 const idx = selectedItems.findIndex(i => i.path === item.path);
+                 if (idx > -1) selectedItems.splice(idx, 1);
+                 else selectedItems.push(item);
              } else {
-                 if (mode === 'load') {
-                     actionBtn.disabled = false;
-                 } else if (mode === 'save') {
-                     // Fill name
-                     if (nameInput) {
-                         nameInput.value = item.name.replace('.json', '');
-                         // Trigger input event to update valid state
-                         nameInput.dispatchEvent(new Event('input'));
-                     }
+                 // Single select
+                 // If folder and no modifier, navigate immediately? 
+                 if (item.type === 'folder') {
+                      currentPath = item.path.replace(/\\/g, '/');
+                      selectedItems = [];
+                      refreshBrowser(container, currentPath, mode, nameInput, actionBtn, pathDisplay);
+                      return;
                  }
+                 selectedItems = [item];
+                 selectedItem = item;
+             }
+             
+             updateSelectionUI(container);
+             
+             // Update Action
+             if (selectedItems.length === 1 && selectedItems[0].type === 'file') {
+                 if (mode === 'load') actionBtn.disabled = false;
+                 if (mode === 'save' && nameInput) {
+                      nameInput.value = selectedItems[0].name.replace('.json', '');
+                      nameInput.dispatchEvent(new Event('input'));
+                 }
+             } else {
+                 if (mode === 'load') actionBtn.disabled = true;
              }
         };
 
         div.ondblclick = () => {
             if (item.type !== 'folder' && mode === 'load') {
                 selectedItem = item;
+                selectedItems = [item];
                 actionBtn.click();
             }
         };
 
         container.appendChild(div);
+    });
+}
+
+function updateSelectionUI(container) {
+    container.querySelectorAll('.browser-item').forEach(div => {
+        const p = div.dataset.path;
+        if (p && selectedItems.some(i => i.path === p)) {
+            div.classList.add('selected');
+        } else {
+            div.classList.remove('selected');
+        }
     });
 }

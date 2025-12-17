@@ -83,21 +83,21 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)',
         font: font,
-        showlegend: true,
+        showlegend: graphType !== 'box',
         legend: {
             orientation: 'h',
-            yanchor: 'bottom',
-            y: 1.02,
-            xanchor: 'right',
-            x: 1,
+            yanchor: 'top',
+            y: -0.1,
+            xanchor: 'center',
+            x: 0.5,
             font: { color: textColor },
             bgcolor: 'rgba(0,0,0,0)',
         },
         margin: {
             l: 60,
             r: 30,
-            b: 150, 
-            t: 80 
+            b: 200, 
+            t: 60 
         }
     };
 

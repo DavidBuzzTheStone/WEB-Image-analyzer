@@ -104,6 +104,92 @@ app.post('/api/delete-item', (req, res) => {
     }
 });
 
+function copyRecursiveSync(src, dest) {
+    const exists = fs.existsSync(src);
+    const stats = exists && fs.statSync(src);
+    const isDirectory = exists && stats.isDirectory();
+    if (isDirectory) {
+        if (!fs.existsSync(dest)) fs.mkdirSync(dest);
+        fs.readdirSync(src).forEach((childItemName) => {
+            copyRecursiveSync(path.join(src, childItemName), path.join(dest, childItemName));
+        });
+    } else {
+        fs.copyFileSync(src, dest);
+    }
+}
+
+app.post('/api/copy-items', (req, res) => {
+    try {
+        const { items, destination } = req.body;
+        const destDir = path.join(PROJECTS_DIR, destination || '');
+        
+        if (!destDir.startsWith(PROJECTS_DIR)) return res.status(403).json({ error: 'Invalid destination' });
+        
+        items.forEach(itemPath => {
+            const srcPath = path.join(PROJECTS_DIR, itemPath);
+            if (!srcPath.startsWith(PROJECTS_DIR)) return;
+            
+            const baseName = path.basename(srcPath);
+            let destPath = path.join(destDir, baseName);
+            
+            let counter = 1;
+            while (fs.existsSync(destPath)) {
+                const ext = path.extname(baseName);
+                const name = path.basename(baseName, ext);
+                destPath = path.join(destDir, `${name}_copy${counter}${ext}`);
+                counter++;
+            }
+            
+            copyRecursiveSync(srcPath, destPath);
+        });
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error copying items:', error);
+        res.status(500).json({ error: 'Failed to copy items' });
+    }
+});
+
+app.post('/api/move-items', (req, res) => {
+    try {
+        const { items, destination } = req.body;
+        const destDir = path.join(PROJECTS_DIR, destination || '');
+        
+        if (!destDir.startsWith(PROJECTS_DIR)) return res.status(403).json({ error: 'Invalid destination' });
+        
+        items.forEach(itemPath => {
+            const srcPath = path.join(PROJECTS_DIR, itemPath);
+            if (!srcPath.startsWith(PROJECTS_DIR)) return;
+            
+            // Prevent moving parent into child
+            if (destDir.startsWith(srcPath) && destDir !== srcPath) {
+                 return; 
+            }
+            
+            const baseName = path.basename(srcPath);
+            let destPath = path.join(destDir, baseName);
+            
+            if (fs.existsSync(destPath)) {
+               // Simple rename collision handling
+               let counter = 1;
+               while (fs.existsSync(destPath)) {
+                   const ext = path.extname(baseName);
+                   const name = path.basename(baseName, ext);
+                   destPath = path.join(destDir, `${name}_moved${counter}${ext}`);
+                   counter++;
+               }
+            }
+            
+            fs.renameSync(srcPath, destPath);
+        });
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error moving items:', error);
+        res.status(500).json({ error: 'Failed to move items' });
+    }
+});
+
 // Save Project
 app.post('/api/save', (req, res) => {
     try {

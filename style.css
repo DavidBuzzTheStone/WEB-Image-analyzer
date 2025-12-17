@@ -564,23 +564,13 @@ body {
     gap: 10px;
 }
 
-.browser-item .delete-btn {
+.browser-item-actions {
     opacity: 0;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1.2em;
-    padding: 4px;
-    border-radius: 4px;
+    transition: opacity 0.1s;
 }
 
-.browser-item:hover .delete-btn {
-    opacity: 0.5;
-}
-
-.browser-item .delete-btn:hover {
+.browser-item:hover .browser-item-actions {
     opacity: 1;
-    background: rgba(255, 0, 0, 0.2);
 }
 
 .modal-footer {

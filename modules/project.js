@@ -42,6 +42,24 @@ export async function loadProject(filePath) {
     return res.json();
 }
 
+export async function copyItems(items, destination) {
+    const res = await fetch('/api/copy-items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items, destination })
+    });
+    return res.json();
+}
+
+export async function moveItems(items, destination) {
+    const res = await fetch('/api/move-items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items, destination })
+    });
+    return res.json();
+}
+
 /**
  * Filter unwanted columns from datasets before saving
  */
