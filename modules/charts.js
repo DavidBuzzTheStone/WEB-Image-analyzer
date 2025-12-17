@@ -96,7 +96,7 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
         margin: {
             l: 60,
             r: 30,
-            b: 80, 
+            b: 150, 
             t: 80 
         }
     };
@@ -382,19 +382,22 @@ function buildBoxPlot(groups, viewMode, datasetColors, thresholds, metric) {
 }
 
 function buildBarChart(groups, viewMode, datasetColors, thresholds, metric) {
-    const traces = [];
+    const xParents = [];
+    const xChildren = [];
+    const yValues = [];
+    const colorValues = [];
+    const hoverTexts = [];
     
-    // Bar chart of Averages
-    
+    // Iterate all groups/subgroups to collect data
     groups.forEach((group) => {
         let groupColor = datasetColors && datasetColors[group.id] ? datasetColors[group.id] : getDefaultColor(group.id);
         const subgroups = organizeSubgroups(group.datasets, viewMode);
-        
-        // If we have multiple subgroups, we might want one bar per subgroup.
-        // We can group them by trace name.
-        
+
         subgroups.forEach((sub, subIndex) => {
             const values = [];
+            // Assuming subgroups are homogeneous enough (usually 1 dataset for image view, multiple for well view)
+            let metadata = sub.datasets[0].metadata; 
+
             sub.datasets.forEach(ds => {
                 ds.data.forEach(row => {
                     if (isPointIncluded(row, thresholds)) {
@@ -406,24 +409,53 @@ function buildBarChart(groups, viewMode, datasetColors, thresholds, metric) {
             if (values.length > 0) {
                 const avg = mean(values);
                 
-                traces.push({
-                    x: [(groups.length > 1 && group.label !== sub.label) ? `${group.label} - ${sub.label}` : sub.label],
-                    y: [avg],
-                    type: 'bar',
-                    name: (groups.length > 1 && group.label !== sub.label) ? `${group.label} - ${sub.label}` : sub.label,
-                    marker: {
-                        color: (groups.length > 1 || sub.datasets.length === 1) ? groupColor : PALETTE[subIndex % PALETTE.length]
-                    }
-                });
+                // Determine Hierarchy Labels
+                let parentLabel = group.label;
+                let childLabel = sub.label;
+                
+                if (viewMode === 'image' || viewMode === 'well') {
+                    // Cleaner hierarchy for Image/Well view
+                    // Parent: "DrugA Well1", Child: "Image 1"
+                    // Use metadata from first dataset
+                    parentLabel = `${metadata.parameter} Well ${metadata.well}`;
+                    childLabel = `Image ${metadata.imageNumber}`;
+                } else if (viewMode === 'parameter') {
+                    // Parent: Parameter, Child: Well
+                    parentLabel = metadata.parameter;
+                    childLabel = `Well ${metadata.well}`;
+                }
+
+                xParents.push(parentLabel);
+                xChildren.push(childLabel);
+                yValues.push(avg);
+                colorValues.push((groups.length > 1 || sub.datasets.length === 1) ? groupColor : PALETTE[subIndex % PALETTE.length]);
+                hoverTexts.push(`${sub.label}: ${avg.toFixed(2)}`);
             }
         });
     });
+    
+    if (yValues.length === 0) return { traces: [], layout: {} };
+
+    const trace = {
+        x: [xParents, xChildren],
+        y: yValues,
+        type: 'bar',
+        marker: {
+            color: colorValues
+        },
+        hovertemplate: '%{x}<br>%{y:.2f}<extra></extra>',
+        showlegend: false
+    };
 
     return {
-        traces,
+        traces: [trace],
         layout: {
              title: `Average ${getMetricLabel(metric)}`,
-             yaxis: { title: `Mean ${getMetricLabel(metric)}`, automargin: true }
+             yaxis: { title: `Mean ${getMetricLabel(metric)}`, automargin: true },
+             xaxis: { 
+                 automargin: true,
+                 tickangle: -45
+             }
         }
     };
 }
@@ -485,11 +517,11 @@ export function isPointIncluded(row, thresholds) {
 }
 
 function organizeSubgroups(datasets, viewMode) {
-    // If viewMode is 'well', we separate by Image (datasets are already images)
+    // If viewMode is 'well' or 'image', we separate by Image (datasets are already images)
     // So each 'subgroup' is just one dataset.
     if (viewMode === 'well' || viewMode === 'image') {
         return datasets.map(d => ({
-            label: `Image ${d.metadata.imageNumber}`,
+            label: `${d.metadata.parameter} Well ${d.metadata.well} Image ${d.metadata.imageNumber}`,
             datasets: [d]
         }));
     }
