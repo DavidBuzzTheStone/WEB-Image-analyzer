@@ -407,8 +407,10 @@ function updateControls(state) {
     
     // Aggregation Controls Visibility & State
     const aggControls = document.getElementById('aggregation-controls');
-    // "only available when grouped by well or parameter"
-    if (state.viewMode === 'well' || state.viewMode === 'parameter') {
+    // "only available when grouped by well or parameter" AND not histogram/bar
+    if ((state.viewMode === 'well' || state.viewMode === 'parameter') && 
+        state.graphType !== 'histogram' && 
+        state.graphType !== 'bar') {
         aggControls.style.display = 'block';
     } else {
         aggControls.style.display = 'none';

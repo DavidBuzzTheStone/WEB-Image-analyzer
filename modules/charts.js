@@ -392,54 +392,60 @@ function buildBoxPlot(groups, viewMode, datasetColors, thresholds, metric) {
 }
 
 function buildBarChart(groups, viewMode, datasetColors, thresholds, metric) {
-    const xParents = [];
-    const xChildren = [];
+    const xLabels = [];
     const yValues = [];
+    const errorValues = [];
     const colorValues = [];
     const hoverTexts = [];
     
     // Iterate all groups/subgroups to collect data
     groups.forEach((group) => {
         let groupColor = datasetColors && datasetColors[group.id] ? datasetColors[group.id] : getDefaultColor(group.id);
-        const subgroups = organizeSubgroups(group.datasets, viewMode);
+        
+        // Grouping Logic for Bar Chart Hierarchical View
+        let subgroups = [];
+        if (viewMode === 'parameter') {
+            // One bar per Parameter (Aggregation of Wells)
+            subgroups = [{ label: 'Mean', datasets: group.datasets }];
+        } else if (viewMode === 'well') {
+            // One bar per Well (Aggregation of Images)
+            const map = {};
+            group.datasets.forEach(d => {
+                const w = d.metadata.well;
+                if (!map[w]) map[w] = { label: `Well ${w}`, datasets: [] };
+                map[w].datasets.push(d);
+            });
+            subgroups = Object.values(map);
+        } else { 
+            // One bar per Image (Mean of pixels)
+            subgroups = group.datasets.map(d => ({ 
+                 label: `Image ${d.metadata.imageNumber}`, 
+                 datasets: [d] 
+             }));
+        }
 
         subgroups.forEach((sub, subIndex) => {
-            const values = [];
-            // Assuming subgroups are homogeneous enough (usually 1 dataset for image view, multiple for well view)
-            let metadata = sub.datasets[0].metadata; 
-
-            sub.datasets.forEach(ds => {
-                ds.data.forEach(row => {
-                    if (isPointIncluded(row, thresholds)) {
-                         values.push(getMetricValue(row, metric));
-                    }
-                });
-            });
+            const stats = calculateHierarchicalStats(sub.datasets, viewMode, thresholds, metric);
             
-            if (values.length > 0) {
-                const avg = mean(values);
+            if (stats) {
+                // Construct flattened label from metadata to ensure uniqueness and clarity
+                const d = sub.datasets[0];
+                const meta = d.metadata;
                 
-                // Determine Hierarchy Labels
-                let parentLabel = group.label;
-                let childLabel = sub.label;
-                
-                if (viewMode === 'image' || viewMode === 'well') {
-                    // Cleaner hierarchy for Image/Well view
-                    // Parent: "DrugA Well1", Child: "Image 1"
-                    // Use metadata from first dataset
-                    parentLabel = `${metadata.parameter} Well ${metadata.well}`;
-                    childLabel = `Image ${metadata.imageNumber}`;
-                } else if (viewMode === 'parameter') {
-                    // Parent: Parameter, Child: Well
-                    parentLabel = metadata.parameter;
-                    childLabel = `Well ${metadata.well}`;
+                let fullLabel = '';
+                if (viewMode === 'parameter') {
+                    fullLabel = meta.parameter;
+                } else if (viewMode === 'well') {
+                    fullLabel = `${meta.parameter} - Well ${meta.well}`;
+                } else { // image
+                    fullLabel = `${meta.parameter} - Well ${meta.well} - Image ${meta.imageNumber}`;
                 }
 
-                xParents.push(parentLabel);
-                xChildren.push(childLabel);
-                yValues.push(avg);
-                colorValues.push((groups.length > 1 || sub.datasets.length === 1) ? groupColor : PALETTE[subIndex % PALETTE.length]);
-                hoverTexts.push(`${sub.label}: ${avg.toFixed(2)}`);
+                xLabels.push(fullLabel);
+                yValues.push(stats.mean);
+                errorValues.push(stats.error);
+                colorValues.push((groups.length > 1 || subgroups.length === 1) ? groupColor : PALETTE[subIndex % PALETTE.length]);
+                hoverTexts.push(`${fullLabel}: ${stats.mean.toFixed(2)} ± ${stats.error.toFixed(2)}`);
             }
         });
     });
@@ -447,13 +453,19 @@ function buildBarChart(groups, viewMode, datasetColors, thresholds, metric) {
     if (yValues.length === 0) return { traces: [], layout: {} };
 
     const trace = {
-        x: [xParents, xChildren],
+        x: xLabels,
         y: yValues,
+        error_y: {
+            type: 'data',
+            array: errorValues,
+            visible: true,
+            color: '#64748b'
+        },
         type: 'bar',
         marker: {
             color: colorValues
         },
-        hovertemplate: '%{x}<br>%{y:.2f}<extra></extra>',
+        hovertemplate: '%{x}<br>%{y:.2f} ± %{error_y.array:.2f}<extra></extra>',
         showlegend: false
     };
 
@@ -464,10 +476,63 @@ function buildBarChart(groups, viewMode, datasetColors, thresholds, metric) {
              yaxis: { title: `Mean ${getMetricLabel(metric)}`, automargin: true },
              xaxis: { 
                  automargin: true,
-                 tickangle: -45
+                 tickangle: -45,
+                 title: ''
              }
         }
     };
+}
+
+function calculateHierarchicalStats(datasets, viewMode, thresholds, metric) {
+    // 1. Calculate Image Means (Base Unit)
+    const imageStats = [];
+    
+    datasets.forEach(ds => {
+        const validRows = ds.data.filter(r => isPointIncluded(r, thresholds));
+        if (validRows.length > 0) {
+            const valRows = validRows.map(r => getMetricValue(r, metric));
+            const m = mean(valRows);
+            imageStats.push({
+                val: m,
+                rawSD: calculateSD(valRows, m),
+                well: ds.metadata ? ds.metadata.well : 'Unknown'
+            });
+        }
+    });
+
+    if (imageStats.length === 0) return null;
+
+    if (viewMode === 'image') {
+        const s = imageStats[0]; 
+        return { mean: s.val, error: s.rawSD };
+    }
+    
+    if (viewMode === 'well') {
+        // Mean of Image Means
+        const vals = imageStats.map(s => s.val);
+        const m = mean(vals);
+        return { mean: m, error: calculateSD(vals, m) };
+    }
+    
+    if (viewMode === 'parameter') {
+        // Mean of Well Means
+        const wells = {};
+        imageStats.forEach(s => {
+            if (!wells[s.well]) wells[s.well] = [];
+            wells[s.well].push(s.val);
+        });
+        
+        const wellMeans = Object.values(wells).map(arr => mean(arr));
+        const m = mean(wellMeans);
+        return { mean: m, error: calculateSD(wellMeans, m) };
+    }
+    return null;
+}
+
+function calculateSD(arr, meanVal) {
+    if (arr.length < 2) return 0;
+    const sumSq = arr.reduce((a, b) => a + Math.pow(b - meanVal, 2), 0);
+    return Math.sqrt(sumSq / (arr.length - 1));
 }
 
 function getMetricValue(row, metric) {
