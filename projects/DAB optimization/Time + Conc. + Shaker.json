@@ -165903,15 +165903,32 @@
     "param__fluoro__well__A__exp200__int55__no3.csv": "#8A78B9",
     "param__fluoro__well__A__exp200__int55__no4.csv": "#98903A"
   },
-  "viewMode": "well",
-  "aggregationMode": "all",
-  "comparisonMode": false,
-  "selectedIds": [],
+  "viewMode": "parameter",
+  "aggregationMode": "mean",
+  "comparisonMode": true,
+  "selectedIds": [
+    "1T 1C",
+    "1T 1C SHAKE"
+  ],
   "expandedIds": [
     "param_2T 2C",
     "well_2T 2C_A"
   ],
   "thresholds": null,
   "graphType": "scatter",
-  "graphMetric": "int"
+  "graphMetric": "int",
+  "savedComparisons": [
+    {
+      "id": 1765968065716,
+      "name": "1T 1C SHAKE vs 1T 1C",
+      "viewMode": "parameter",
+      "aggregationMode": "mean",
+      "graphType": "scatter",
+      "graphMetric": "int",
+      "selectedIds": [
+        "1T 1C",
+        "1T 1C SHAKE"
+      ]
+    }
+  ]
 }

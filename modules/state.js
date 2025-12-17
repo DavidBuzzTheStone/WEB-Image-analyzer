@@ -186,6 +186,9 @@ export const state = {
             id: Date.now(),
             name: name,
             viewMode: currentState.viewMode,
+            aggregationMode: currentState.aggregationMode,
+            graphType: currentState.graphType,
+            graphMetric: currentState.graphMetric,
             selectedIds: [...currentState.selectedIds],
             // Optional: Store colors if specific to this comparison?
         };

@@ -2,7 +2,7 @@
  * UI Manager Module
  * Handles DOM updates and user interactions.
  */
-import { state, getGroups } from './state.js';
+import { state, getGroups, getSelectedGroups } from './state.js';
 import { getDefaultColor, isPointIncluded } from './charts.js';
 
 export function setupUIListeners() {
@@ -91,7 +91,12 @@ export function setupUIListeners() {
 
     // Save Comparison
     document.getElementById('save-comparison-btn').addEventListener('click', () => {
-        const name = prompt('Name for this comparison:');
+        const s = state.get();
+        const groups = getGroups();
+        const selected = getSelectedGroups(groups, s.selectedIds);
+        const defaultName = selected.map(g => g.label).join(' vs ');
+        
+        const name = prompt('Name for this comparison:', defaultName);
         if (name) {
             state.saveComparison(name);
         }
@@ -181,10 +186,12 @@ function renderSavedComparisons(stateData) {
         
         row.onclick = () => {
              // Restore comparison
+             if (comp.aggregationMode) state.setAggregationMode(comp.aggregationMode);
+             if (comp.graphType) state.setGraphType(comp.graphType);
+             if (comp.graphMetric) state.setGraphMetric(comp.graphMetric);
+
              if (stateData.viewMode !== comp.viewMode) {
                  state.setViewMode(comp.viewMode);
-                 // setViewMode triggers notification, but we need to proceed. 
-                 // Actually synchronous update in state. 
              }
              
              state.setComparisonMode(true);

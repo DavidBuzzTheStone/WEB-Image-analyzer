@@ -143,6 +143,7 @@ function openModal(mode) {
                     if (projectData.graphType) state.setGraphType(projectData.graphType);
                     if (projectData.graphMetric) state.setGraphMetric(projectData.graphMetric);
                     if (projectData.datasetColors) state.setDatasetColors(projectData.datasetColors);
+                    if (projectData.savedComparisons) state.setSavedComparisons(projectData.savedComparisons);
                     
                     state.notify('dataset_update');
                 }
