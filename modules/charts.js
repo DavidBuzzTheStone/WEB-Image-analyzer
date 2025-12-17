@@ -489,14 +489,25 @@ function calculateHierarchicalStats(datasets, viewMode, thresholds, metric) {
     
     datasets.forEach(ds => {
         const validRows = ds.data.filter(r => isPointIncluded(r, thresholds));
-        if (validRows.length > 0) {
-            const valRows = validRows.map(r => getMetricValue(r, metric));
-            const m = mean(valRows);
+        
+        if (metric === 'count') {
+            // Special handling for count
+            const m = validRows.length;
             imageStats.push({
                 val: m,
-                rawSD: calculateSD(valRows, m),
+                rawSD: 0, // No variance in a single count value
                 well: ds.metadata ? ds.metadata.well : 'Unknown'
             });
+        } else {
+            if (validRows.length > 0) {
+                const valRows = validRows.map(r => getMetricValue(r, metric));
+                const m = mean(valRows);
+                imageStats.push({
+                    val: m,
+                    rawSD: calculateSD(valRows, m),
+                    well: ds.metadata ? ds.metadata.well : 'Unknown'
+                });
+            }
         }
     });
 
@@ -508,7 +519,7 @@ function calculateHierarchicalStats(datasets, viewMode, thresholds, metric) {
     }
     
     if (viewMode === 'well') {
-        // Mean of Image Means
+        // Mean of Image Means (or Counts)
         const vals = imageStats.map(s => s.val);
         const m = mean(vals);
         return { mean: m, error: calculateSD(vals, m) };
@@ -549,6 +560,7 @@ function getMetricLabel(metric) {
         case 'int': return 'Integrated Intensity';
         case 'area': return 'Area (NArea)';
         case 'density': return 'Intensity Density';
+        case 'count': return 'Count';
         default: return '';
     }
 }

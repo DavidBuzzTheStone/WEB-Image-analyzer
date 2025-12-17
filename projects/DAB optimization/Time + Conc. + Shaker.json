@@ -165901,33 +165901,97 @@
     "param__fluoro SHAKE__well__A__exp200__int55__no4.csv": "#4275B4",
     "param__fluoro__well__A__exp200__int55__no2.csv": "#7C6138",
     "param__fluoro__well__A__exp200__int55__no3.csv": "#8A78B9",
-    "param__fluoro__well__A__exp200__int55__no4.csv": "#98903A"
+    "param__fluoro__well__A__exp200__int55__no4.csv": "#98903A",
+    "2T 1C__A": "#3633e6",
+    "2T 2C__A": "#20ee5e",
+    "1T 1C SHAKE__A": "#fb23c1",
+    "2T 2C SHAKE__A": "#ff00a2",
+    "3T 3C SHAKE__A": "#fb1fa2",
+    "3T 3C__A": "#72f893"
   },
-  "viewMode": "parameter",
-  "aggregationMode": "mean",
+  "viewMode": "well",
+  "aggregationMode": "all",
   "comparisonMode": true,
   "selectedIds": [
-    "1T 1C",
-    "1T 1C SHAKE"
+    "beads 1C__A",
+    "beads 3C__A",
+    "beads only__A",
+    "fluoro__A"
   ],
   "expandedIds": [
+    "well_2T 2C_A",
+    "param_3T 1C",
+    "param_fluoro",
+    "param_1T 1C",
+    "param_3T 3C",
+    "param_1T 1C SHAKE",
+    "param_2T 2C SHAKE",
+    "param_3T 3C SHAKE",
     "param_2T 2C",
-    "well_2T 2C_A"
+    "param_beads 1C",
+    "param_beads only",
+    "param_beads 3C",
+    "param_fluoro SHAKE",
+    "param_beads 1C SHAKE"
   ],
-  "thresholds": null,
+  "thresholds": {
+    "type": "area_int",
+    "values": {
+      "areaMin": 9,
+      "intMax": 80000,
+      "areaMax": 25,
+      "intMin": 0
+    },
+    "isAdjusting": false
+  },
   "graphType": "scatter",
-  "graphMetric": "int",
+  "graphMetric": "area",
+  "dotSize": 16,
+  "jitterWidth": 0.3,
   "savedComparisons": [
     {
-      "id": 1765968065716,
-      "name": "1T 1C SHAKE vs 1T 1C",
-      "viewMode": "parameter",
-      "aggregationMode": "mean",
-      "graphType": "scatter",
+      "id": 1765993409261,
+      "name": "Time 1C",
+      "viewMode": "well",
+      "aggregationMode": "all",
+      "graphType": "box",
       "graphMetric": "int",
       "selectedIds": [
-        "1T 1C",
-        "1T 1C SHAKE"
+        "1T 1C__A",
+        "2T 1C__A",
+        "3T 1C__A",
+        "fluoro__A"
+      ]
+    },
+    {
+      "id": 1765993582892,
+      "name": "Time + Conc",
+      "viewMode": "well",
+      "aggregationMode": "all",
+      "graphType": "bar",
+      "graphMetric": "int",
+      "selectedIds": [
+        "1T 1C__A",
+        "2T 1C__A",
+        "2T 2C__A",
+        "3T 1C__A",
+        "3T 3C__A"
+      ]
+    },
+    {
+      "id": 1765993819824,
+      "name": "Shake vs No Shake Area",
+      "viewMode": "well",
+      "aggregationMode": "all",
+      "graphType": "bar",
+      "graphMetric": "area",
+      "selectedIds": [
+        "1T 1C SHAKE__A",
+        "1T 1C__A",
+        "2T 2C SHAKE__A",
+        "2T 2C__A",
+        "3T 3C SHAKE__A",
+        "3T 3C__A"
       ]
     }
   ]
