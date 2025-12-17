@@ -22,6 +22,8 @@ const initialState = {
     thresholds: null,  // { type: 'density'|'area_int', values: {...}, isAdjusting: boolean }
     graphType: 'scatter', // 'scatter', 'histogram', 'box', 'bar'
     graphMetric: 'int',   // 'int', 'area', 'density'
+    dotSize: 8,
+    jitterWidth: 0,
     savedComparisons: [], 
     listeners: []
 };
@@ -44,6 +46,16 @@ export const state = {
 
     setGraphMetric: (metric) => {
         currentState.graphMetric = metric;
+        state.notify('graph_settings_change');
+    },
+
+    setDotSize: (size) => {
+        currentState.dotSize = size;
+        state.notify('graph_settings_change');
+    },
+
+    setJitterWidth: (width) => {
+        currentState.jitterWidth = width;
         state.notify('graph_settings_change');
     },
 

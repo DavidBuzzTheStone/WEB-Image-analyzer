@@ -72,7 +72,9 @@ function init() {
                 getIsDarkMode(),
                 appState.thresholds,
                 appState.graphType,
-                appState.graphMetric
+                appState.graphMetric,
+                appState.dotSize,
+                appState.jitterWidth
             );
         } else {
             // Clear chart or show placeholder

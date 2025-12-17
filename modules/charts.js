@@ -48,7 +48,7 @@ const SYMBOLS = [
  */
 // Update signature
 // Update signature
-export function renderChart(containerId, groups, aggregationMode, viewMode, datasetColors, isDarkMode = true, thresholds = null, graphType = 'scatter', graphMetric = 'int') {
+export function renderChart(containerId, groups, aggregationMode, viewMode, datasetColors, isDarkMode = true, thresholds = null, graphType = 'scatter', graphMetric = 'int', dotSize = 8, jitterWidth = 0) {
     // Theme colors
     const textColor = isDarkMode ? '#f8fafc' : '#1e293b';
     const gridColor = isDarkMode ? '#334155' : '#e2e8f0';
@@ -69,7 +69,7 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
                 break;
             case 'scatter':
             default:
-                chartData = buildScatterPlot(groups, aggregationMode, viewMode, datasetColors, isDarkMode, thresholds);
+                chartData = buildScatterPlot(groups, aggregationMode, viewMode, datasetColors, isDarkMode, thresholds, dotSize, jitterWidth);
                 break;
         }
     } catch (e) {
@@ -121,6 +121,7 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
     const config = {
         responsive: true,
         displayModeBar: true,
+        scrollZoom: true
     };
 
     Plotly.newPlot(containerId, chartData.traces, layout, config);
@@ -128,7 +129,7 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
 
 // --- BUILDERS ---
 
-function buildScatterPlot(groups, aggregationMode, viewMode, datasetColors, isDarkMode, thresholds) {
+function buildScatterPlot(groups, aggregationMode, viewMode, datasetColors, isDarkMode, thresholds, dotSize, jitterWidth) {
     const traces = [];
     const shapes = [];
 
@@ -146,12 +147,21 @@ function buildScatterPlot(groups, aggregationMode, viewMode, datasetColors, isDa
                 
                 sub.datasets.forEach(ds => {
                     ds.data.forEach(row => {
+                        // Apply Jitter
+                        const jitter = jitterWidth > 0 ? (Math.random() * 2 * jitterWidth) - jitterWidth : 0;
+                        
+                        // Safety cast
+                        const valX = row.NArea !== undefined ? Number(row.NArea) : 0;
+                        const valY = row.IntegratedInt !== undefined ? Number(row.IntegratedInt) : 0;
+                        
+                        const xVal = valX + jitter;
+                        
                         if (isPointIncluded(row, thresholds)) {
-                            x.push(row.NArea);
-                            y.push(row.IntegratedInt);
+                            x.push(xVal);
+                            y.push(valY);
                         } else if (thresholds && thresholds.isAdjusting) {
-                            excludedX.push(row.NArea);
-                            excludedY.push(row.IntegratedInt);
+                            excludedX.push(xVal);
+                            excludedY.push(valY);
                         }
                     });
                 });
@@ -167,7 +177,7 @@ function buildScatterPlot(groups, aggregationMode, viewMode, datasetColors, isDa
                         marker: {
                              color: (groups.length > 1 || sub.datasets.length === 1) ? groupColor : PALETTE[subIndex % PALETTE.length],
                              symbol: SYMBOLS[subIndex % SYMBOLS.length],
-                             size: 8,
+                             size: dotSize,
                              opacity: 0.7
                         },
                         text: sub.label
@@ -187,7 +197,7 @@ function buildScatterPlot(groups, aggregationMode, viewMode, datasetColors, isDa
                         marker: {
                              color: '#888',
                              symbol: SYMBOLS[subIndex % SYMBOLS.length],
-                             size: 6,
+                             size: Math.max(2, dotSize - 2),
                              opacity: 0.5
                         }
                     });

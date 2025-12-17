@@ -140,9 +140,69 @@ function setupResizer() {
 
 export function renderUI(appState, groups) {
     updateControls(appState);
+    renderScatterControls(appState);
     renderSidebarList(groups, appState);
     renderThresholdControls(appState);
     renderSavedComparisons(appState);
+}
+
+function renderScatterControls(stateData) {
+    let container = document.getElementById('scatter-controls');
+    if (!container) {
+        const metricContainer = document.getElementById('metric-select-container');
+        if (!metricContainer) return; 
+        
+        container = document.createElement('div');
+        container.id = 'scatter-controls';
+        container.style.marginTop = '1rem';
+        // Insert after metric container
+        metricContainer.parentNode.insertBefore(container, metricContainer.nextSibling);
+        
+        // Initial HTML
+        container.innerHTML = `
+            <h3>Scatter Settings</h3>
+            <div class="inputs-container">
+                <div class="input-pair-group">
+                    <div class="label-small" id="dot-size-label">Dot Size</div>
+                    <input type="range" min="2" max="20" step="1" class="range-input" id="dot-size-input" style="width:100%">
+                </div>
+                <div class="input-pair-group">
+                    <div class="label-small" id="jitter-label">Jitter Width</div>
+                    <input type="range" min="0" max="0.5" step="0.05" class="range-input" id="jitter-input" style="width:100%">
+                </div>
+            </div>
+        `;
+    }
+
+    if (stateData.graphType !== 'scatter') {
+        container.style.display = 'none';
+        return;
+    }
+    
+    container.style.display = 'block';
+    
+    const sizeInput = container.querySelector('#dot-size-input');
+    const jitterInput = container.querySelector('#jitter-input');
+    
+    // Always re-bind to ensure connectivity
+    sizeInput.oninput = (e) => {
+        state.setDotSize(Number(e.target.value));
+    };
+    
+    jitterInput.oninput = (e) => {
+        state.setJitterWidth(Number(e.target.value));
+    };
+    
+    // Update UI if we are not currently interacting with it
+    if (document.activeElement !== sizeInput) {
+        sizeInput.value = stateData.dotSize;
+    }
+    if (document.activeElement !== jitterInput) {
+        jitterInput.value = stateData.jitterWidth;
+    }
+    
+    container.querySelector('#dot-size-label').innerText = `Dot Size: ${stateData.dotSize}px`;
+    container.querySelector('#jitter-label').innerText = `Jitter Width: ${stateData.jitterWidth}`;
 }
 
 function renderSavedComparisons(stateData) {
