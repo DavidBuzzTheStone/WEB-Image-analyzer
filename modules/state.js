@@ -73,6 +73,11 @@ export const state = {
         state.notify('color_change');
     },
 
+    setDatasetColors: (colors) => {
+        currentState.datasetColors = colors;
+        state.notify('color_change');
+    },
+
     setDatasets: (datasets) => {
         currentState.datasets = datasets;
         state.notify('dataset_update');

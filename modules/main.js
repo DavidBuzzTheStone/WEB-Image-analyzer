@@ -8,9 +8,12 @@ import { renderChart } from './charts.js';
 import { getGroups, getSelectedGroups } from './state.js';
 import { initUpload } from './upload.js';
 
+import { setupProjectListeners } from './project_ui.js';
+
 // Initialize
 function init() {
     setupUIListeners();
+    setupProjectListeners();
     setupThemeToggle();
     
     // Initialize Upload Handling
