@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Analyzer - User Guide</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-color: #3b82f6;
+            --card-bg: #1e293b;
+            --border-color: #334155;
+        }
+        
+        [data-theme="light"] {
+            --bg-color: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: var(--accent-color);
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            margin-top: 40px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h3 {
+            font-size: 1.3rem;
+            margin-top: 30px;
+        }
+
+        p {
+            color: var(--text-secondary);
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .shortcut-key {
+            display: inline-block;
+            background: rgba(148, 163, 184, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+            border: 1px solid var(--border-color);
+        }
+
+        ul {
+            padding-left: 20px;
+            color: var(--text-secondary);
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .icon {
+            font-size: 24px;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        nav {
+            position: sticky;
+            top: 20px;
+            align-self: start;
+            display: none;
+        }
+
+        @media (min-width: 1200px) {
+            .container-wrapper {
+                display: flex;
+                max-width: 1200px;
+                margin: 0 auto;
+                gap: 40px;
+            }
+            .container {
+                margin: 0;
+            }
+            nav {
+                display: block;
+                width: 250px;
+                padding-top: 40px;
+            }
+            nav ul {
+                list-style: none;
+                padding: 0;
+            }
+            nav a {
+                color: var(--text-secondary);
+                text-decoration: none;
+                display: block;
+                padding: 8px 0;
+                transition: color 0.2s;
+            }
+            nav a:hover {
+                color: var(--accent-color);
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="container-wrapper">
+    <nav>
+        <ul>
+            <li><a href="#getting-started">Getting Started</a></li>
+            <li><a href="#data-upload">Uploading Data</a></li>
+            <li><a href="#project-management">Project Management</a></li>
+            <li><a href="#visualization">Standard Visualization</a></li>
+            <li><a href="#comparisons">Comparisons</a></li>
+            <li><a href="#ui-features">UI & Shortcuts</a></li>
+            <li><a href="#faq">FAQ</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <header>
+            <h1>Image Analyzer Guide</h1>
+            <p>Comprehensive documentation for the Image Analyzer Web App.</p>
+        </header>
+
+        <section id="getting-started">
+            <div class="card">
+                <h2>Getting Started</h2>
+                <p>The Image Analyzer is a powerful tool designed to visualize and compare biological image data (like ComDet Fiji plugin outputs). It runs directly in your browser but sends data to a secure backend for project storage.</p>
+            </div>
+        </section>
+
+        <section id="data-upload">
+            <h2>Uploading Data</h2>
+            <p>You can import data in CSV format. The application expects specific columns typical of Fiji ComDet results (e.g., 'Int', 'Area', 'Channel', 'Slice').</p>
+            <div class="feature-grid">
+                <div class="card">
+                    <span class="icon">📂</span>
+                    <h3>Drag & Drop</h3>
+                    <p>Simply drag CSV files from your computer anywhere onto the page to upload them instantly.</p>
+                </div>
+                <div class="card">
+                    <span class="icon">🖱</span>
+                    <h3>File Button</h3>
+                    <p>Click the "Upload CSVs" button at the bottom of the sidebar to open the standard file picker.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="project-management">
+            <h2>Project Management</h2>
+            <p>Save your work, including datasets, thresholds, and notes, to the server.</p>
+            
+            <div class="card">
+                <h3>Saving Projects</h3>
+                <p>Use the <strong>Save</strong> button in the sidebar. </p>
+                <ul>
+                    <li><strong>Quick Save:</strong> If you've already saved the project, clicking "Save" overwrites the current file.</li>
+                    <li><strong>Save As:</strong> Click the small arrow next to Save to choose "Save As..." and create a new file.</li>
+                    <li><strong>Keyboard Shortcut:</strong> Press <span class="shortcut-key">Ctrl</span> + <span class="shortcut-key">S</span> (Windows) or <span class="shortcut-key">Cmd</span> + <span class="shortcut-key">S</span> (Mac).</li>
+                </ul>
+                <p><em>Note: Unsaved changes are indicated by an amber glowing border on the Save button.</em></p>
+            </div>
+
+            <div class="card">
+                <h3>File Manager</h3>
+                <p>The File Manager allows you to organize your projects on the server.</p>
+                <ul>
+                    <li><strong>Navigation:</strong> Click folders to open them. Click ".." to go up.</li>
+                    <li><strong>Multi-Select:</strong> Hold <span class="shortcut-key">Ctrl</span> / <span class="shortcut-key">Cmd</span> to select multiple items.</li>
+                    <li><strong>Actions:</strong> Hover over an item to seeing Copy, Cut, and Delete buttons.</li>
+                    <li><strong>Clipboard:</strong> After copying/cutting, a "Paste" button appears in the toolbar.</li>
+                    <li><strong>Shortcuts:</strong> 
+                        <span class="shortcut-key">Cmd+C</span> (Copy), 
+                        <span class="shortcut-key">Cmd+X</span> (Cut), 
+                        <span class="shortcut-key">Cmd+V</span> (Paste), 
+                        <span class="shortcut-key">Del</span> (Delete).
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="visualization">
+            <h2>Standard Visualization</h2>
+            <p>Explore your data using various chart types and aggregation modes.</p>
+            
+            <div class="card">
+                <h3>View Modes</h3>
+                <ul>
+                    <li><strong>Image:</strong> Group data by individual source image.</li>
+                    <li><strong>Well:</strong> Aggregate data by Well (expects filenames like 'A01_...').</li>
+                    <li><strong>Parameter:</strong> Aggregate by active parameter/condition.</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>Chart Types</h3>
+                <ul>
+                    <li><strong>Scatter:</strong> Plot individual data points (X=Index, Y=Value). Ideal for seeing distributions.</li>
+                    <li><strong>Histogram:</strong> View frequency distribution of values.</li>
+                    <li><strong>Box Plot:</strong> Statistical summary (Median, Quartiles). Hides legend for clarity.</li>
+                    <li><strong>Bar Chart:</strong> Compare aggregate values (Mean/Median).</li>
+                </ul>
+            </div>
+        </section>
+        
+        <section id="comparisons">
+            <h2>Comparisons</h2>
+            <div class="card">
+                <p>Compare specific subsets of data.</p>
+                <ol>
+                    <li>Click <strong>Enable Comparison</strong> in the sidebar.</li>
+                    <li>Select the datasets you want to compare from the list.</li>
+                    <li>Click <strong>Save Comp.</strong> to store this specific view.</li>
+                    <li>Access comparisons later from the "Saved Comparisons" list at the top.</li>
+                </ol>
+            </div>
+        </section>
+
+        <section id="ui-features">
+            <h2>UI Features & Shortcuts</h2>
+            <div class="card">
+                <h3>Keyboard Shortcuts</h3>
+                <table style="width:100%; text-align: left; border-collapse: collapse;">
+                    <tr>
+                        <th style="padding: 8px; border-bottom: 1px solid var(--border-color);">Action</th>
+                        <th style="padding: 8px; border-bottom: 1px solid var(--border-color);">Shortcut</th>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;">Save Project</td>
+                        <td style="padding: 8px;"><span class="shortcut-key">Cmd/Ctrl + S</span></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;">Close Modal</td>
+                        <td style="padding: 8px;"><span class="shortcut-key">Esc</span></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;">Copy Files</td>
+                        <td style="padding: 8px;"><span class="shortcut-key">Cmd/Ctrl + C</span></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;">Paste Files</td>
+                        <td style="padding: 8px;"><span class="shortcut-key">Cmd/Ctrl + V</span></td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="card">
+                <h3>Aggregation Controls</h3>
+                <p>When in 'Well' or 'Parameter' view (and not in Histogram/Bar mode), aggregation controls appear. You can choose to plot <strong>All Points</strong>, or aggregate them to a single <strong>Mean</strong> or <strong>Median</strong> point per group.</p>
+            </div>
+        </section>
+        
+        <section id="faq">
+            <h2>FAQ</h2>
+            <div class="card">
+                <h3>Does it work offline?</h3>
+                <p>The visualization works offline, but Saving/Loading projects requires a connection to the hosting server.</p>
+                <h3>What file formats are supported?</h3>
+                <p>Currently, only CSV files with specific headers (Int, Area, etc.) are supported.</p>
+            </div>
+        </section>
+        
+        <footer style="text-align: center; margin-top: 50px; color: var(--text-secondary); font-size: 0.9em;">
+            &copy; 2024 Image Analyzer. Built for Science.
+        </footer>
+
+    </div>
+</div>
+
+<script>
+    // Theme consistency with main app
+    if (localStorage.getItem('theme') === 'light') {
+        document.body.setAttribute('data-theme', 'light');
+    }
+</script>
+
+</body>
+</html>

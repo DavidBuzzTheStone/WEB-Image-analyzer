@@ -6,12 +6,12 @@
 import { state } from './state.js';
 
 export async function loadProjectTree() {
-    const res = await fetch('/api/projects');
+    const res = await fetch('api/projects.php');
     return res.json();
 }
 
 export async function createFolder(folderPath) {
-    const res = await fetch('/api/create-folder', {
+    const res = await fetch('api/create-folder.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ folderPath })
@@ -20,7 +20,7 @@ export async function createFolder(folderPath) {
 }
 
 export async function deleteItem(itemPath) {
-    const res = await fetch('/api/delete-item', {
+    const res = await fetch('api/delete-item.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ itemPath })
@@ -29,7 +29,7 @@ export async function deleteItem(itemPath) {
 }
 
 export async function saveProject(filePath, data) {
-    const res = await fetch('/api/save', {
+    const res = await fetch('api/save.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filePath, data })
@@ -38,12 +38,12 @@ export async function saveProject(filePath, data) {
 }
 
 export async function loadProject(filePath) {
-    const res = await fetch(`/api/load?filePath=${encodeURIComponent(filePath)}`);
+    const res = await fetch(`api/load.php?filePath=${encodeURIComponent(filePath)}`);
     return res.json();
 }
 
 export async function copyItems(items, destination) {
-    const res = await fetch('/api/copy-items', {
+    const res = await fetch('api/copy-items.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items, destination })
@@ -52,10 +52,19 @@ export async function copyItems(items, destination) {
 }
 
 export async function moveItems(items, destination) {
-    const res = await fetch('/api/move-items', {
+    const res = await fetch('api/move-items.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items, destination })
+    });
+    return res.json();
+}
+
+export async function renameItem(itemPath, newName) {
+    const res = await fetch('api/rename-item.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemPath, newName })
     });
     return res.json();
 }

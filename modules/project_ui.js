@@ -1,7 +1,7 @@
 /**
  * UI Logic for Project Manager (Modal, etc)
  */
-import { loadProjectTree, createFolder, saveProject, loadProject, prepareSaveData, deleteItem, copyItems, moveItems } from './project.js';
+import { loadProjectTree, createFolder, saveProject, loadProject, prepareSaveData, deleteItem, copyItems, moveItems, renameItem } from './project.js';
 import { state } from './state.js';
 
 let currentPath = ''; 
@@ -451,6 +451,7 @@ function renderBrowserItems(container, items, pathStr, mode, nameInput, actionBt
                 <span>${item.name}</span>
             </div>
             <div class="browser-item-actions" style="display:flex; gap:6px;">
+                 <button class="text-btn small rename-btn" title="Rename" style="padding:4px 6px; background: var(--bg-tertiary); border-radius: 4px; border: 1px solid var(--border-color);">✏️</button>
                  <button class="text-btn small copy-btn" title="Copy" style="padding:4px 6px; background: var(--bg-tertiary); border-radius: 4px; border: 1px solid var(--border-color);">📋</button>
                  <button class="text-btn small cut-btn" title="Cut" style="padding:4px 6px; background: var(--bg-tertiary); border-radius: 4px; border: 1px solid var(--border-color);">✂️</button>
                  <button class="text-btn small delete-btn" title="Delete" style="padding:4px 6px; background: var(--bg-tertiary); border-radius: 4px; border: 1px solid var(--border-color); color:#ef4444;">🗑</button>
@@ -458,6 +459,31 @@ function renderBrowserItems(container, items, pathStr, mode, nameInput, actionBt
         `;
         
         // Add listeners
+        const renameBtn = div.querySelector('.rename-btn');
+        renameBtn.onclick = async (e) => {
+            e.stopPropagation();
+            if (selectedItems.length > 1) return; // Prevent if multi-select
+            
+            const newName = prompt('New Name:', item.name);
+            if (newName && newName !== item.name) {
+                // strict validation? let server handle basic chars
+                const validName = newName.trim();
+                if (!validName) return;
+                
+                try {
+                    const res = await renameItem(item.path, validName);
+                    if (res.error) {
+                        alert(res.error);
+                    } else {
+                        refreshBrowser(container, pathStr, mode, nameInput, actionBtn, pathDisplay);
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('Rename failed.');
+                }
+            }
+        };
+
         const copyBtn = div.querySelector('.copy-btn');
         copyBtn.onclick = (e) => {
             e.stopPropagation();
@@ -530,12 +556,19 @@ function renderBrowserItems(container, items, pathStr, mode, nameInput, actionBt
 }
 
 function updateSelectionUI(container) {
+    const isMulti = selectedItems.length > 1;
     container.querySelectorAll('.browser-item').forEach(div => {
         const p = div.dataset.path;
         if (p && selectedItems.some(i => i.path === p)) {
             div.classList.add('selected');
         } else {
             div.classList.remove('selected');
+        }
+        
+        // Toggle Rename Button
+        const renameBtn = div.querySelector('.rename-btn');
+        if (renameBtn) {
+            renameBtn.style.display = isMulti ? 'none' : '';
         }
     });
 }
