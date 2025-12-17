@@ -102,6 +102,21 @@ export function setupUIListeners() {
         }
     });
 
+    // Project Notes
+    const notesBtn = document.getElementById('toggle-project-notes-btn');
+    const notesInput = document.getElementById('project-notes-input');
+    if (notesBtn && notesInput) {
+        notesBtn.addEventListener('click', () => {
+            const isHidden = notesInput.style.display === 'none';
+            notesInput.style.display = isHidden ? 'block' : 'none';
+            notesBtn.innerText = isHidden ? '▼ Project Notes' : '▶ Project Notes';
+        });
+
+        notesInput.addEventListener('input', (e) => {
+            state.setProjectNotes(e.target.value);
+        });
+    }
+
     setupResizer();
 }
 
@@ -232,17 +247,37 @@ function renderSavedComparisons(stateData) {
             JSON.stringify(stateData.selectedIds.sort()) === JSON.stringify(comp.selectedIds.sort())) {
             row.classList.add('selected');
         }
+
+        const actionGroup = document.createElement('div');
+        actionGroup.style.display = 'flex';
+        actionGroup.style.gap = '4px';
+
+        const noteBtn = document.createElement('button');
+        noteBtn.innerHTML = '📝';
+        noteBtn.className = 'text-btn small';
+        noteBtn.title = comp.note ? comp.note : 'Add Note';
+        noteBtn.style.opacity = comp.note ? '1' : '0.4';
+        noteBtn.style.padding = '0 2px';
+        noteBtn.onclick = (e) => {
+            e.stopPropagation();
+            showNoteModal('Edit Note', comp.note, (newNote) => {
+                state.setComparisonNote(comp.id, newNote);
+            });
+        };
         
         const delBtn = document.createElement('button');
         delBtn.innerHTML = '🗑';
         delBtn.className = 'text-btn danger small';
-        delBtn.style.padding = '0 4px';
+        delBtn.style.padding = '0 2px';
         delBtn.onclick = (e) => {
             e.stopPropagation();
             if (confirm(`Delete comparison "${comp.name}"?`)) {
                 state.deleteComparison(comp.id);
             }
         };
+        
+        actionGroup.appendChild(noteBtn);
+        actionGroup.appendChild(delBtn);
         
         row.onclick = () => {
              // Restore comparison
@@ -259,7 +294,7 @@ function renderSavedComparisons(stateData) {
         };
         
         row.appendChild(label);
-        row.appendChild(delBtn);
+        row.appendChild(actionGroup);
         list.appendChild(row);
     });
 }
@@ -400,6 +435,18 @@ function createInputPair(label, prefix, values) {
 }
 
 function updateControls(state) {
+    // Save Button State
+    const saveBtn = document.getElementById('save-project-btn');
+    if (saveBtn) {
+        if (state.isDirty) saveBtn.classList.add('unsaved-changes');
+        else saveBtn.classList.remove('unsaved-changes');
+    }
+
+    const notesInput = document.getElementById('project-notes-input');
+    if (document.activeElement !== notesInput && notesInput) {
+        notesInput.value = state.projectNotes || '';
+    }
+
     // View Mode Active State
     document.querySelectorAll('#view-mode-toggle .toggle-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.value === state.viewMode);
@@ -609,4 +656,51 @@ export function setupThemeToggle() {
         // Force chart re-render to pick up new thread colors
         state.notify();
     });
+}
+
+/* Helper for Note Modal */
+function showNoteModal(title, initialValue, onSave) {
+    // Remove existing if any
+    const existing = document.getElementById('note-modal-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'note-modal-overlay';
+    overlay.className = 'modal-overlay';
+    
+    overlay.innerHTML = `
+        <div class="modal-content" style="width: 400px; max-width: 90%;">
+            <div class="modal-header">
+                <h2>${title}</h2>
+                <button class="text-btn close-btn" style="font-size:1.5rem; line-height:1;">×</button>
+            </div>
+            <div class="modal-body" style="padding: 16px;">
+                <textarea id="note-modal-textarea" class="text-input" style="width: 100%; height: 150px; padding: 8px; resize: vertical; box-sizing: border-box; background: var(--bg-app); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 6px;">${initialValue || ''}</textarea>
+            </div>
+            <div class="modal-footer" style="padding: 12px 16px;">
+                 <button class="secondary-btn cancel-btn">Cancel</button>
+                 <button class="primary-btn save-btn" style="width: auto; padding: 6px 16px;">Save</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    const textarea = overlay.querySelector('#note-modal-textarea');
+    textarea.focus();
+    
+    const close = () => overlay.remove();
+    
+    overlay.querySelector('.close-btn').onclick = close;
+    overlay.querySelector('.cancel-btn').onclick = close;
+    overlay.querySelector('.save-btn').onclick = () => {
+        const val = textarea.value;
+        onSave(val);
+        close();
+    };
+    
+    // Close on click outside
+    overlay.onclick = (e) => {
+        if (e.target === overlay) close();
+    };
 }

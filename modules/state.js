@@ -24,7 +24,9 @@ const initialState = {
     graphMetric: 'int',   // 'int', 'area', 'density'
     dotSize: 8,
     jitterWidth: 0,
-    savedComparisons: [], 
+    projectNotes: '',
+    savedComparisons: [],
+    isDirty: false, 
     listeners: []
 };
 
@@ -57,6 +59,29 @@ export const state = {
     setJitterWidth: (width) => {
         currentState.jitterWidth = width;
         state.notify('graph_settings_change');
+    },
+    
+    setProjectNotes: (text) => {
+        currentState.projectNotes = text;
+        state.notify('project_meta_update'); 
+    },
+
+    setComparisonNote: (id, note) => {
+        const comp = currentState.savedComparisons.find(c => c.id === id);
+        if (comp) {
+            comp.note = note;
+            state.notify('saved_comparison_update');
+        }
+    },
+    
+    markAsSaved: () => {
+        currentState.isDirty = false;
+        state.notify('project_saved');
+    },
+
+    markAsLoaded: () => {
+         currentState.isDirty = false;
+         state.notify('project_loaded');
     },
 
     addDataset: (dataset) => {
@@ -227,6 +252,9 @@ export const state = {
     },
 
     notify: (actionType = 'general') => {
+        if (actionType !== 'project_saved' && actionType !== 'project_loaded') {
+            currentState.isDirty = true;
+        }
         currentState.listeners.forEach(listener => listener(state.get(), actionType));
     }
 };

@@ -1,0 +1,17 @@
+{
+  "datasets": [],
+  "datasetColors": {},
+  "viewMode": "image",
+  "aggregationMode": "all",
+  "comparisonMode": false,
+  "selectedIds": [],
+  "expandedIds": [],
+  "thresholds": null,
+  "graphType": "scatter",
+  "graphMetric": "int",
+  "dotSize": 8,
+  "jitterWidth": 0,
+  "projectNotes": "asfasdf",
+  "savedComparisons": [],
+  "isDirty": true
+}

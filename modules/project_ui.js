@@ -128,6 +128,7 @@ function openModal(mode) {
                 
                 const dataToSave = prepareSaveData();
                 await saveProject(fullPath, dataToSave);
+                state.markAsSaved();
                 alert('Project saved successfully!');
                 document.body.removeChild(overlay);
             } else {
@@ -145,7 +146,9 @@ function openModal(mode) {
                     if (projectData.datasetColors) state.setDatasetColors(projectData.datasetColors);
                     if (projectData.savedComparisons) state.setSavedComparisons(projectData.savedComparisons);
                     
-                    state.notify('dataset_update');
+                    state.setProjectNotes(projectData.projectNotes || '');
+                    
+                    state.markAsLoaded();
                 }
                 
                 document.body.removeChild(overlay);

@@ -658,3 +658,27 @@ body {
     outline: none;
 }
 
+
+/* Unsaved Changes Indicator */
+.secondary-btn.unsaved-changes {
+    border-color: #fbbf24; /* Amber */
+    color: #fbbf24;
+    position: relative;
+    /* Optional: pulsing effect */
+    animation: pulse-border 2s infinite;
+}
+
+.secondary-btn.unsaved-changes::after {
+    content: '●';
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    font-size: 10px;
+    color: #fbbf24;
+}
+
+@keyframes pulse-border {
+    0% { border-color: rgba(251, 191, 36, 0.4); }
+    50% { border-color: rgba(251, 191, 36, 1); }
+    100% { border-color: rgba(251, 191, 36, 0.4); }
+}
