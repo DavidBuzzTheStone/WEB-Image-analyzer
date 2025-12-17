@@ -10,6 +10,12 @@
     --success: #10b981;
     
     --font-main: 'Inter', sans-serif;
+
+    /* Modal / Interactive Elements Defaults (Dark) */
+    --bg-primary: #1e293b;   /* Header/Footer */
+    --bg-secondary: #0f172a; /* Body/Content */
+    --bg-tertiary: #020617;  /* Inputs/Deep layers */
+    --hover-color: rgba(255,255,255,0.05);
 }
 
 * {
@@ -307,6 +313,11 @@ body {
     --text-secondary: #64748b;
     --border-color: #cbd5e1;
     --accent-color: #0284c7; /* Darker blue for contrast */
+    
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f1f5f9;
+    --hover-color: #e2e8f0;
 }
 
 /* Color Picker Input */
@@ -358,65 +369,9 @@ body {
     padding-right: 10px;
 }
 
-/* Light Mode Variables */
-[data-theme="light"] {
-    --bg-app: #f1f5f9;
-    --bg-sidebar: #ffffff;
-    --bg-card: #ffffff;
-    --text-primary: #0f172a;
-    --text-secondary: #64748b;
-    --border-color: #cbd5e1;
-    --accent-color: #0284c7; /* Darker blue for contrast */
-}
 
-/* Color Picker Input */
-.color-picker {
-    -webkit-appearance: none;
-    border: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    overflow: hidden;
-    cursor: pointer;
-    background: none;
-    padding: 0;
-    margin-right: 8px;
-}
 
-.color-picker::-webkit-color-swatch-wrapper {
-    padding: 0;
-}
 
-.color-picker::-webkit-color-swatch {
-    border: none;
-    border-radius: 50%;
-    border: 1px solid var(--text-secondary); /* Slight border for visibility */
-}
-
-/* Theme Toggle */
-.theme-toggle-btn {
-    background: none;
-    border: 1px solid var(--border-color);
-    color: var(--text-primary);
-    padding: 6px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 1.2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-}
-
-.title-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex: 1;
-    justify-content: space-between;
-    padding-right: 10px;
-}
 
 /* Hierarchical Groups */
 .group-header {

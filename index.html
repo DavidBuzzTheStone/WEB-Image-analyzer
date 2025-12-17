@@ -50,8 +50,16 @@
 
             <div class="controls-section">
                 <h3>Project</h3>
-                <div style="display: flex; gap: 8px;">
-                    <button id="save-project-btn" class="secondary-btn" style="flex: 1;">Save</button>
+                <div style="display: flex; gap: 8px; align-items: flex-start;">
+                    <div style="display: flex; flex-direction: column; flex: 1; position: relative;" id="save-btn-group">
+                        <div style="display: flex;">
+                            <button id="save-project-btn" class="secondary-btn" style="border-top-right-radius: 0; border-bottom-right-radius: 0; flex: 1; border-right: none;">Save</button>
+                            <button id="save-options-toggle" class="secondary-btn" style="border-top-left-radius: 0; border-bottom-left-radius: 0; padding: 8px 4px; width: 24px; display: flex; align-items: center; justify-content: center;">▼</button>
+                        </div>
+                        <div id="save-options-menu" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; margin-top: 4px; z-index: 50; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                            <button id="save-as-btn" class="text-btn" style="display: block; width: 100%; text-align: left; padding: 8px 12px; color: var(--text-primary);">Save As...</button>
+                        </div>
+                    </div>
                     <button id="load-project-btn" class="secondary-btn" style="flex: 1;">Load</button>
                 </div>
                 <div style="margin-top: 8px;">

@@ -27,6 +27,7 @@ const initialState = {
     projectNotes: '',
     savedComparisons: [],
     isDirty: false, 
+    currentFilePath: null,
     listeners: []
 };
 
@@ -72,6 +73,10 @@ export const state = {
             comp.note = note;
             state.notify('saved_comparison_update');
         }
+    },
+    
+    setProjectFilePath: (path) => {
+        currentState.currentFilePath = path;
     },
     
     markAsSaved: () => {

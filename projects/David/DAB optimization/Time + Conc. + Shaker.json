@@ -165943,7 +165943,7 @@
   "graphMetric": "count",
   "dotSize": 8,
   "jitterWidth": 0,
-  "projectNotes": "ljll",
+  "projectNotes": "Conclusions :\n- Increasing DAB time increases integrated intensity\n\n- If the concentration increases with time, that seems to remove this effect\n\n- Using a shaker during the DAB reaction doesn't increase dot size\n\n- The TBST washes during the HRP/DAB steps seem to remove large part of the noise",
   "savedComparisons": [
     {
       "id": 1765993409261,
@@ -166009,5 +166009,6 @@
       "note": "Without the thresholds (looking at all noise), the ones without the HRP/DAB step have much more noise! Maybe the TBST wash removes a lot of noise?"
     }
   ],
-  "isDirty": true
+  "isDirty": true,
+  "currentFilePath": "David/DAB optimization/Time + Conc. + Shaker.json"
 }

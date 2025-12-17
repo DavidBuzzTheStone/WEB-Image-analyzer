@@ -8,8 +8,107 @@ let currentPath = '';
 let selectedItem = null; 
 
 export function setupProjectListeners() {
-    document.getElementById('save-project-btn').addEventListener('click', () => openModal('save'));
+    // Save (Quick Save or Save As)
+    const saveBtn = document.getElementById('save-project-btn');
+    saveBtn.addEventListener('click', () => {
+        const s = state.get();
+        if (s.currentFilePath) {
+            // Quick Save
+            quickSave(s.currentFilePath);
+        } else {
+            // Save As
+            openModal('save');
+        }
+    });
+    
+    // Save Options Toggle
+    const toggle = document.getElementById('save-options-toggle');
+    const menu = document.getElementById('save-options-menu');
+    const group = document.getElementById('save-btn-group');
+    
+    if (toggle && menu && group) {
+        let hideTimeout;
+
+        const showMenu = () => {
+            clearTimeout(hideTimeout);
+            menu.style.display = 'block';
+        };
+
+        const hideMenu = () => {
+            hideTimeout = setTimeout(() => {
+                menu.style.display = 'none';
+            }, 300);
+        };
+
+        // Toggle on click
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // If already open, close immediately. If closed, open.
+            // We clear timeout to prevent hover-hide from interfering
+            clearTimeout(hideTimeout);
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        });
+        
+        // Hover behavior
+        group.addEventListener('mouseenter', showMenu);
+        group.addEventListener('mouseleave', hideMenu);
+        
+        // Also ensure menu itself keeps it open (if gap caused leave)
+        menu.addEventListener('mouseenter', showMenu);
+        menu.addEventListener('mouseleave', hideMenu);
+        
+        // Save As Action
+        document.getElementById('save-as-btn').addEventListener('click', () => {
+            menu.style.display = 'none';
+            openModal('save');
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', () => {
+            menu.style.display = 'none';
+        });
+    }
+
     document.getElementById('load-project-btn').addEventListener('click', () => openModal('load'));
+    
+    // Global Shortcuts
+    document.addEventListener('keydown', (e) => {
+        // Esc to close modal
+        if (e.key === 'Escape') {
+            const overlay = document.querySelector('.modal-overlay');
+            if (overlay) document.body.removeChild(overlay);
+        }
+        
+        // Ctrl+S / Cmd+S to Save
+        if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+            e.preventDefault(); // Prevent browser save
+            const s = state.get();
+            if (s.currentFilePath) {
+                quickSave(s.currentFilePath);
+            } else {
+                openModal('save');
+            }
+        }
+    });
+}
+
+async function quickSave(path) {
+    try {
+        const dataToSave = prepareSaveData();
+        // Ensure path includes extension just in case, though it should from state
+        await saveProject(path, dataToSave);
+        state.markAsSaved();
+        
+        // Visual feedback
+        const btn = document.getElementById('save-project-btn');
+        const originalText = btn.innerText;
+        btn.innerText = 'Saved!';
+        setTimeout(() => btn.innerText = originalText, 1000);
+        
+    } catch (err) {
+        console.error(err);
+        alert('Quick save failed.');
+    }
 }
 
 function openModal(mode) {
@@ -128,12 +227,15 @@ function openModal(mode) {
                 
                 const dataToSave = prepareSaveData();
                 await saveProject(fullPath, dataToSave);
+                state.setProjectFilePath(fullPath);
                 state.markAsSaved();
                 alert('Project saved successfully!');
                 document.body.removeChild(overlay);
             } else {
                 if (!selectedItem || selectedItem.type !== 'file') return;
                 const projectData = await loadProject(selectedItem.path);
+                
+                state.setProjectFilePath(selectedItem.path);
                 
                 // Restore State
                 if (projectData.datasets) {
@@ -279,6 +381,13 @@ function renderBrowserItems(container, items, pathStr, mode, nameInput, actionBt
                      }
                  }
              }
+        };
+
+        div.ondblclick = () => {
+            if (item.type !== 'folder' && mode === 'load') {
+                selectedItem = item;
+                actionBtn.click();
+            }
         };
 
         container.appendChild(div);
