@@ -18,10 +18,19 @@ async function init() {
 
     // Subscribe to state changes to re-render interface
     state.subscribe((appState, actionType) => {
+        console.groupCollapsed(`State Update: ${actionType}`);
+        console.log('Selected IDs:', appState.selectedIds);
+        
         // Update Sidebar List (Skip if just a color change to prevent picker losing focus)
         const groups = getGroups();
+        console.log(`Groups available: ${groups.length}`);
+        
         if (actionType !== 'color_change' && actionType !== 'threshold_value_update') {
-            renderUI(appState, groups);
+            try {
+                renderUI(appState, groups);
+            } catch (err) {
+                console.error('Error rendering UI:', err);
+            }
         }
         
         // Update Chart
@@ -33,27 +42,36 @@ async function init() {
              if (appState.selectedIds.length > 0) {
                  const selected = getSelectedGroups(groups, appState.selectedIds);
                  if (selected.length > 0) groupsToPlot = [selected[0]];
+                 else console.warn('Selected IDs present but no matching groups found (getGroups mismatch?)');
+             } else {
+                 console.log('No selection active');
              }
         }
         
+        console.log(`Groups to plot: ${groupsToPlot.length}`);
+
         if (groupsToPlot.length > 0) {
             // Explicitly clear placeholder
             document.getElementById('chart-container').innerHTML = '';
             
-            renderChart(
-                'chart-container', 
-                groupsToPlot, 
-                appState.aggregationMode, 
-                appState.viewMode,
-                appState.datasetColors,
-                getIsDarkMode(),
-                appState.thresholds,
-                appState.graphType,
-                appState.graphMetric,
-                appState.dotSize,
-                appState.jitterWidth,
-                appState.fontSize
-            );
+            try {
+                renderChart(
+                    'chart-container', 
+                    groupsToPlot, 
+                    appState.aggregationMode, 
+                    appState.viewMode,
+                    appState.datasetColors,
+                    getIsDarkMode(),
+                    appState.thresholds,
+                    appState.graphType,
+                    appState.graphMetric,
+                    appState.dotSize,
+                    appState.jitterWidth,
+                    appState.fontSize
+                );
+            } catch (err) {
+                console.error('Error rendering Chart:', err);
+            }
         } else {
             // Clear chart or show placeholder
             document.getElementById('chart-container').innerHTML = `
@@ -62,6 +80,7 @@ async function init() {
                 </div>
             `;
         }
+        console.groupEnd();
     });
 
     // Check for project in URL
@@ -69,17 +88,18 @@ async function init() {
     const projectPath = urlParams.get('project');
     if (projectPath) {
         console.log('Found project in URL:', projectPath);
+        
         // We await this so the initial state is set before other things if needed
         // But usually it's fine to be async
         const success = await loadAndRestoreProject(projectPath);
         if (success) {
-            console.log('Initial project load complete. Forcing final render check.');
+            console.log('Initial project load complete. Scheduling final render check.');
             // Force a re-announcement of the loaded state to ensure UI catches up if it missed anything
             // Use setTimeout to ensure we yield to event loop and let DOM settle
             setTimeout(() => {
-                console.log('Executing forced refresh');
+                console.log('Executing forced refresh (500ms delayed)');
                 state.notify('force_refresh'); 
-            }, 100); 
+            }, 500); 
         }
     }
     
