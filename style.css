@@ -627,3 +627,14 @@ body {
     50% { border-color: rgba(251, 191, 36, 1); }
     100% { border-color: rgba(251, 191, 36, 0.4); }
 }
+
+/* Drag and Drop Feedback */
+.group-header.drag-over-top,
+.list-item.drag-over-top {
+    border-top: 2px solid var(--accent-color);
+}
+
+.group-header.drag-over-bottom,
+.list-item.drag-over-bottom {
+    border-bottom: 2px solid var(--accent-color);
+}

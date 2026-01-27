@@ -28,7 +28,8 @@ const initialState = {
     savedComparisons: [],
     isDirty: false, 
     currentFilePath: null,
-    listeners: []
+    listeners: [],
+    groupOrder: []
 };
 
 let currentState = { ...initialState };
@@ -256,6 +257,55 @@ export const state = {
         state.notify('selection_change');
     },
 
+    setGroupOrder: (order) => {
+        currentState.groupOrder = [...order];
+        state.notify('order_change');
+    },
+        
+    reorderGroup: (sourceId, targetId, position) => {
+        // position: 'before' | 'after'
+        
+        // Helper to flatten current structure to ensure we have all IDs
+        const groups = getGroups();
+        const flatten = (list) => {
+            let ids = [];
+            list.forEach(g => {
+                ids.push(g.id);
+                if (g.children) {
+                    ids = ids.concat(flatten(g.children));
+                }
+            });
+            return ids;
+        };
+
+        // If groupOrder is empty or incomplete, assume current hierarchical order is the baseline
+        // But we must merge it with existing groupOrder to preserve previous sorts if possible?
+        // Simpler: Just rebuild groupOrder from current hierarchy sorting, then apply the move.
+        // Actually, getGroups() *uses* groupOrder. 
+        // If we want to change the order, we take the *current* effective order (flattened),
+        // move the element, and save that as the new groupOrder.
+        
+        // 1. Get current Full List in visual order
+        let currentOrder = flatten(groups);
+        
+        // 2. Remove source
+        currentOrder = currentOrder.filter(id => id !== sourceId);
+        
+        // 3. Find target index
+        const targetIndex = currentOrder.indexOf(targetId);
+        if (targetIndex === -1) return; // Target not found?
+        
+        // 4. Insert
+        if (position === 'before') {
+            currentOrder.splice(targetIndex, 0, sourceId);
+        } else {
+            currentOrder.splice(targetIndex + 1, 0, sourceId);
+        }
+        
+        currentState.groupOrder = currentOrder;
+        state.notify('order_change');
+    },
+
     notify: (actionType = 'general') => {
         if (actionType !== 'project_saved' && actionType !== 'project_loaded') {
             currentState.isDirty = true;
@@ -270,40 +320,39 @@ export const state = {
  */
 export function getGroups() {
     const s = state.get();
-    const { datasets, viewMode } = s;
+    const { datasets, viewMode, groupOrder } = s;
+
+    let groups = [];
 
     if (viewMode === 'image') {
-        // Hierarchy: Parameter -> Well -> Image (Leaf)
-        const groups = {}; // Key: Parameter
-
+        const map = {};
         datasets.forEach(d => {
             const param = d.metadata.parameter || 'Unknown Parameter';
             const well = d.metadata.well || 'Unknown Well';
 
-            if (!groups[param]) {
-                groups[param] = {
+            if (!map[param]) {
+                map[param] = {
                     id: `param_${param}`,
                     label: param,
                     type: 'folder',
-                    children: {}, // Key: Well
-                    datasets: [] // Aggregated datasets for this folder
-                };
-            }
-            groups[param].datasets.push(d);
-
-            if (!groups[param].children[well]) {
-                groups[param].children[well] = {
-                    id: `well_${param}_${well}`,
-                    label: `Well ${well}`,
-                    type: 'folder',
-                    children: [], // Array of leaves
+                    childrenMap: {}, 
                     datasets: []
                 };
             }
-            groups[param].children[well].datasets.push(d);
+            map[param].datasets.push(d);
 
-            // Leaf
-            groups[param].children[well].children.push({
+            if (!map[param].childrenMap[well]) {
+                map[param].childrenMap[well] = {
+                    id: `well_${param}_${well}`,
+                    label: `Well ${well}`,
+                    type: 'folder',
+                    children: [],
+                    datasets: []
+                };
+            }
+            map[param].childrenMap[well].datasets.push(d);
+            
+            map[param].childrenMap[well].children.push({
                 id: d.id,
                 label: `Image ${d.metadata.imageNumber}`,
                 type: 'leaf',
@@ -312,61 +361,51 @@ export function getGroups() {
             });
         });
 
-        // Convert objects to arrays
-        return Object.values(groups).map(paramGroup => ({
-            ...paramGroup,
-            children: Object.values(paramGroup.children).map(wellGroup => ({
-                ...wellGroup,
-                // Sort wells? Strings for now.
-            }))
+        groups = Object.values(map).map(p => ({
+            ...p,
+            children: Object.values(p.childrenMap)
         }));
-    }
-
-    if (viewMode === 'well') {
-        // Hierarchy: Parameter -> Well (Leaf)
-        const groups = {}; // Key: Parameter
-
+    } else if (viewMode === 'well') {
+        const map = {};
         datasets.forEach(d => {
             const param = d.metadata.parameter || 'Unknown Parameter';
             const well = d.metadata.well || 'Unknown Well';
             const key = `${param}__${well}`;
-
-            if (!groups[param]) {
-                groups[param] = {
+            
+            if (!map[param]) {
+                map[param] = {
                     id: `param_${param}`,
                     label: param,
                     type: 'folder',
-                    children: {}, // Key: Well (Composite ID)
+                    childrenMap: {},
                     datasets: []
                 };
             }
-            groups[param].datasets.push(d);
-
-            if (!groups[param].children[key]) {
-                groups[param].children[key] = {
+            map[param].datasets.push(d);
+            
+            if (!map[param].childrenMap[key]) {
+                map[param].childrenMap[key] = {
                     id: key,
                     label: `Well ${well}`,
                     type: 'leaf',
                     datasets: [],
-                    metadata: d.metadata // Representative
+                    metadata: d.metadata
                 };
             }
-            groups[param].children[key].datasets.push(d);
+            map[param].childrenMap[key].datasets.push(d);
         });
-
-        return Object.values(groups).map(paramGroup => ({
-            ...paramGroup,
-            children: Object.values(paramGroup.children)
+        
+        groups = Object.values(map).map(p => ({
+            ...p,
+            children: Object.values(p.childrenMap)
         }));
-    }
 
-    if (viewMode === 'parameter') {
-        // Flat list of Parameters
-        const groups = {};
+    } else if (viewMode === 'parameter') {
+        const map = {};
         datasets.forEach(d => {
             const key = d.metadata.parameter;
-            if (!groups[key]) {
-                groups[key] = {
+            if (!map[key]) {
+                map[key] = {
                     id: key,
                     label: d.metadata.parameter,
                     type: 'leaf',
@@ -374,12 +413,36 @@ export function getGroups() {
                     metadata: d.metadata
                 };
             }
-            groups[key].datasets.push(d);
+            map[key].datasets.push(d);
         });
-        return Object.values(groups);
+        groups = Object.values(map);
     }
+    
+    // Sort Groups recursively
+    const sortFn = (list) => {
+        return list.sort((a, b) => {
+            const idxA = groupOrder.indexOf(a.id);
+            const idxB = groupOrder.indexOf(b.id);
+            
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            if (idxA !== -1) return -1;
+            if (idxB !== -1) return 1;
+            
+            return a.label.localeCompare(b.label, undefined, { numeric: true });
+        });
+    };
+    
+    const sortRecursive = (list) => {
+        const sorted = sortFn(list);
+        sorted.forEach(g => {
+            if (g.children) {
+                g.children = sortRecursive(g.children);
+            }
+        });
+        return sorted;
+    };
 
-    return [];
+    return sortRecursive(groups);
 }
 
 /**
@@ -397,15 +460,6 @@ export function getSelectedGroups(groups, selectedIds) {
         }
         
         if (group.children) {
-            // Recurse depending on structure.
-            // In our current 'getGroups', children is an array or object?
-            // In 'getGroups' implementation:
-            // Top level maps to array of paramGroups.
-            // paramGroup.children is array of wellGroups (in Image mode) or leaves (in Well mode).
-            
-            // Note: In `getGroups` earlier, we converted everything to arrays before returning.
-            // So `group.children` is always an array if it exists.
-            
             if (Array.isArray(group.children)) {
                 selected = selected.concat(getSelectedGroups(group.children, selectedIds));
             }
@@ -413,6 +467,10 @@ export function getSelectedGroups(groups, selectedIds) {
     });
     
     return selected;
+}
+
+export function getGroupOrder() {
+    return state.get().groupOrder;
 }
 
 function generateColorFromName(str) {
