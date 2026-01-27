@@ -2,6 +2,7 @@
  * Charts Module
  * Wrapper for Plotly.js to render scientific scatter plots.
  */
+import { getGroupOrder } from './state.js';
 
 export function getDefaultColor(id) {
     let hash = 0;
@@ -12,6 +13,90 @@ export function getDefaultColor(id) {
     }
     const index = Math.abs(hash) % PALETTE.length;
     return PALETTE[index];
+}
+
+function organizeSubgroups(datasets, viewMode) {
+    // If viewMode is 'well' or 'image', we separate by Image (datasets are already images)
+    // So each 'subgroup' is just one dataset.
+    if (viewMode === 'well' || viewMode === 'image') {
+        let subgroups = datasets.map(d => ({
+            id: d.id,
+            label: `${d.metadata.parameter} Well ${d.metadata.well} Image ${d.metadata.imageNumber}`,
+            datasets: [d]
+        }));
+        
+        const order = getGroupOrder();
+        
+        return subgroups.sort((a, b) => {
+            const idxA = order.indexOf(a.id);
+            const idxB = order.indexOf(b.id);
+            
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            if (idxA !== -1) return -1;
+            if (idxB !== -1) return 1;
+            
+            return a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: 'base' });
+        });
+    }
+    
+    // If viewMode is 'parameter', we separate by Well.
+    if (viewMode === 'parameter') {
+        const wellGroups = {};
+        datasets.forEach(d => {
+            if (!wellGroups[d.metadata.well]) {
+                const param = d.metadata.parameter;
+                const well = d.metadata.well;
+                // Reconstruct ID used in state.getGroups
+                // In image view mode: `well_${param}_${well}`
+                // but in parameter view mode, they are children of a leaf? No.
+                // In parameter view mode, we are inside a Parameter Group (Leaf in state).
+                // Wait, if viewMode is parameter, the top level groups are Parameters.
+                // state.getGroups() returns Flat list of Parameters.
+                // But inside charts.js, we take that Parameter group and break it down into subgroups (Wells).
+                // These "Well Subgroups" do NOT exist in the state hierarchy in Parameter view mode.
+                // They only exist in Image view mode.
+                // So... we should probably check if we can find an ID that matches.
+                // The reordering in Sidebar only works for items VISIBLE in sidebar.
+                // In Parameter view, only Parameters are visible. You cannot reorder Wells.
+                
+                // USER REQUEST: "boxes of the children are not ordered based on their order number currently."
+                // "if the "Param" view is selected, boxes are drawn for each well in that parameter)."
+                // The user implies they want to order these wells.
+                // BUT: In "Param" view, Wells are NOT shown in the sidebar. So they cannot be reordered by drag-and-drop in the sidebar.
+                // However, if the user switches to "Image" view, they CAN reorder wells.
+                // The user expects the order established in "Image" view (which saves to groupOrder) to persist/be respected 
+                // when viewing the aggregation in "Parameter" view.
+                
+                // So we need to reconstruct the ID these wells WOULD have in Image view.
+                // In Image view (state.js): id = `well_${param}_${well}`
+                
+                const id = `well_${param}_${well}`;
+                
+                wellGroups[d.metadata.well] = {
+                    id: id,
+                    label: `Well ${d.metadata.well}`,
+                    datasets: []
+                };
+            }
+            wellGroups[d.metadata.well].datasets.push(d);
+        });
+        
+        const order = getGroupOrder();
+        
+        // Sort by Order ID if Present, else Natural Sort
+        return Object.values(wellGroups).sort((a, b) => {
+            const idxA = order.indexOf(a.id);
+            const idxB = order.indexOf(b.id);
+            
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            if (idxA !== -1) return -1; 
+            if (idxB !== -1) return 1;
+            
+            return a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: 'base' });
+        });
+    }
+    
+    return [{ label: 'All', datasets }];
 }
 
 // Colors for comparison mode
@@ -603,33 +688,7 @@ export function isPointIncluded(row, thresholds) {
     return true;
 }
 
-function organizeSubgroups(datasets, viewMode) {
-    // If viewMode is 'well' or 'image', we separate by Image (datasets are already images)
-    // So each 'subgroup' is just one dataset.
-    if (viewMode === 'well' || viewMode === 'image') {
-        return datasets.map(d => ({
-            label: `${d.metadata.parameter} Well ${d.metadata.well} Image ${d.metadata.imageNumber}`,
-            datasets: [d]
-        }));
-    }
-    
-    // If viewMode is 'parameter', we separate by Well.
-    if (viewMode === 'parameter') {
-        const wellGroups = {};
-        datasets.forEach(d => {
-            if (!wellGroups[d.metadata.well]) {
-                wellGroups[d.metadata.well] = {
-                    label: `Well ${d.metadata.well}`,
-                    datasets: []
-                };
-            }
-            wellGroups[d.metadata.well].datasets.push(d);
-        });
-        return Object.values(wellGroups);
-    }
-    
-    return [{ label: 'All', datasets }];
-}
+
 
 function calculateStats(data) {
     const xVals = data.map(d => d.NArea).filter(v => !isNaN(v));

@@ -29,6 +29,7 @@ export async function loadAndRestoreProject(filePath) {
             if (projectData.graphMetric) state.setGraphMetric(projectData.graphMetric);
             if (projectData.datasetColors) state.setDatasetColors(projectData.datasetColors);
             if (projectData.savedComparisons) state.setSavedComparisons(projectData.savedComparisons);
+            if (projectData.groupOrder) state.setGroupOrder(projectData.groupOrder);
             
             state.setProjectNotes(projectData.projectNotes || '');
             

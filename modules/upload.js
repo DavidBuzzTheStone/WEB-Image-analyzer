@@ -41,25 +41,33 @@ function setupDragAndDrop(callback) {
 
     // Provide visual feedback
     window.addEventListener('dragenter', (e) => {
-        dragCounter++;
-        overlay.classList.remove('hidden');
+        // Only show overlay if dragging files
+        if (e.dataTransfer.types && Array.from(e.dataTransfer.types).includes("Files")) {
+            dragCounter++;
+            overlay.classList.remove('hidden');
+        }
     });
 
     window.addEventListener('dragleave', (e) => {
-        dragCounter--;
-        if (dragCounter === 0) {
-            overlay.classList.add('hidden');
+        if (e.dataTransfer.types && Array.from(e.dataTransfer.types).includes("Files")) {
+            dragCounter--;
+            if (dragCounter === 0) {
+                overlay.classList.add('hidden');
+            }
         }
     });
 
     window.addEventListener('drop', (e) => {
-        dragCounter = 0; // Reset
-        overlay.classList.add('hidden');
-        
-        const dt = e.dataTransfer;
-        const files = Array.from(dt.files || []);
-        
-        processFiles(files, callback);
+        // If it was a file drag, handle it
+        if (e.dataTransfer.types && Array.from(e.dataTransfer.types).includes("Files")) {
+            dragCounter = 0; // Reset
+            overlay.classList.add('hidden');
+            
+            const dt = e.dataTransfer;
+            const files = Array.from(dt.files || []);
+            
+            processFiles(files, callback);
+        }
     });
 }
 

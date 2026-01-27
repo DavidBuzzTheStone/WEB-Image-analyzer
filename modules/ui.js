@@ -536,6 +536,57 @@ function renderSidebarList(groups, appState) {
 }
 
 function renderRecursiveGroup(group, appState, level) {
+    
+    // Drag Handlers
+    const handleDragStart = (e) => {
+        e.stopPropagation(); // Prevent bubbling to parent folder
+        e.dataTransfer.setData('text/plain', group.id);
+        e.dataTransfer.effectAllowed = 'move';
+        // visual feedback?
+    };
+    
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'move';
+        
+        const rect = e.currentTarget.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        
+        // Don't show drop feedback on self
+        // Note: We can't easily check drag source ID here in all browsers, 
+        // but we'll prevent the drop action later.
+        
+        // Remove existing classes
+        e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom');
+        
+        if (e.clientY < midY) {
+            e.currentTarget.classList.add('drag-over-top');
+        } else {
+            e.currentTarget.classList.add('drag-over-bottom');
+        }
+    };
+    
+    const handleDragLeave = (e) => {
+        e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom');
+    };
+    
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom');
+        
+        const sourceId = e.dataTransfer.getData('text/plain');
+        if (sourceId === group.id) return; // Dropped on self
+        
+        const rect = e.currentTarget.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        const position = e.clientY < midY ? 'before' : 'after';
+        
+        state.reorderGroup(sourceId, group.id, position);
+    };
+
+
     if (group.type === 'folder') {
         const isExpanded = appState.expandedIds.includes(group.id);
         
@@ -546,13 +597,23 @@ function renderRecursiveGroup(group, appState, level) {
         // Header
         const header = document.createElement('div');
         header.className = 'group-header interactable';
+        header.draggable = true; // Enable Drag
+        
+        // Ensure flex layout
+        header.style.display = 'flex';
+        header.style.alignItems = 'center';
         header.style.paddingLeft = `${level * 12}px`;
+        
+        header.ondragstart = handleDragStart;
+        header.ondragover = handleDragOver;
+        header.ondragleave = handleDragLeave;
+        header.ondrop = handleDrop;
         
         // Chevron
         const chevron = document.createElement('span');
         chevron.className = `chevron ${isExpanded ? 'expanded' : ''}`;
         chevron.innerText = '▶'; 
-        // We can use transform rotate for animation
+        chevron.style.marginRight = '4px';
         
         const label = document.createElement('span');
         label.innerText = group.label;
@@ -560,9 +621,9 @@ function renderRecursiveGroup(group, appState, level) {
         header.appendChild(chevron);
         header.appendChild(label);
         
-        // Toggle Handler
+        // Toggle Handler (Check if clicking chevron or label, not dragging)
         header.addEventListener('click', () => {
-            state.toggleExpansion(group.id);
+             state.toggleExpansion(group.id);
         });
 
         container.appendChild(header);
@@ -579,8 +640,14 @@ function renderRecursiveGroup(group, appState, level) {
         // Leaf Item (Selectable)
         const item = document.createElement('div');
         item.className = 'list-item';
+        item.draggable = true; // Enable Drag
         item.dataset.id = group.id;
         item.style.paddingLeft = `${(level * 12) + 10}px`; // Base padding + Indent
+        
+        item.ondragstart = handleDragStart;
+        item.ondragover = handleDragOver;
+        item.ondragleave = handleDragLeave;
+        item.ondrop = handleDrop;
         
         // Selection State
         if (appState.selectedIds.includes(group.id)) {
