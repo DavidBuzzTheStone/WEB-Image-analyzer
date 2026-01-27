@@ -31,6 +31,9 @@ export async function loadAndRestoreProject(filePath) {
             if (projectData.savedComparisons) state.setSavedComparisons(projectData.savedComparisons);
             if (projectData.groupOrder) state.setGroupOrder(projectData.groupOrder);
             
+            // Restore selection LAST, after viewMode (which clears selection)
+            if (projectData.selectedIds) state.setSelectedIds(projectData.selectedIds);
+            
             state.setProjectNotes(projectData.projectNotes || '');
             
             state.markAsLoaded();
