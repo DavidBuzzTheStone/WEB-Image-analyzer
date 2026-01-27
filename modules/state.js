@@ -24,6 +24,7 @@ const initialState = {
     graphMetric: 'int',   // 'int', 'area', 'density'
     dotSize: 8,
     jitterWidth: 0,
+    fontSize: 12,
     projectNotes: '',
     savedComparisons: [],
     isDirty: false, 
@@ -59,6 +60,11 @@ export const state = {
 
     setJitterWidth: (width) => {
         currentState.jitterWidth = width;
+        state.notify('graph_settings_change');
+    },
+
+    setFontSize: (size) => {
+        currentState.fontSize = size;
         state.notify('graph_settings_change');
     },
     

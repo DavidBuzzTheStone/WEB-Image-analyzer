@@ -155,69 +155,88 @@ function setupResizer() {
 
 export function renderUI(appState, groups) {
     updateControls(appState);
-    renderScatterControls(appState);
+    renderGraphSettings(appState);
     renderSidebarList(groups, appState);
     renderThresholdControls(appState);
     renderSavedComparisons(appState);
 }
 
-function renderScatterControls(stateData) {
-    let container = document.getElementById('scatter-controls');
+function renderGraphSettings(stateData) {
+    let container = document.getElementById('graph-settings');
     if (!container) {
+        // Check if old container exists and remove it (cleanup)
+        const oldContainer = document.getElementById('scatter-controls');
+        if (oldContainer) oldContainer.remove();
+
         const metricContainer = document.getElementById('metric-select-container');
         if (!metricContainer) return; 
         
         container = document.createElement('div');
-        container.id = 'scatter-controls';
+        container.id = 'graph-settings';
         container.style.marginTop = '1rem';
         // Insert after metric container
         metricContainer.parentNode.insertBefore(container, metricContainer.nextSibling);
         
         // Initial HTML
         container.innerHTML = `
-            <h3>Scatter Settings</h3>
+            <h3>Graph Settings</h3>
             <div class="inputs-container">
                 <div class="input-pair-group">
-                    <div class="label-small" id="dot-size-label">Dot Size</div>
-                    <input type="range" min="2" max="20" step="1" class="range-input" id="dot-size-input" style="width:100%">
+                    <div class="label-small" id="font-size-label">Font Size</div>
+                    <input type="range" min="8" max="24" step="1" class="range-input" id="font-size-input" style="width:100%">
                 </div>
-                <div class="input-pair-group">
-                    <div class="label-small" id="jitter-label">Jitter Width</div>
-                    <input type="range" min="0" max="0.5" step="0.05" class="range-input" id="jitter-input" style="width:100%">
+                <div id="scatter-specific-settings">
+                    <div class="input-pair-group">
+                        <div class="label-small" id="dot-size-label">Dot Size</div>
+                        <input type="range" min="2" max="20" step="1" class="range-input" id="dot-size-input" style="width:100%">
+                    </div>
+                    <div class="input-pair-group">
+                        <div class="label-small" id="jitter-label">Jitter Width</div>
+                        <input type="range" min="0" max="0.5" step="0.05" class="range-input" id="jitter-input" style="width:100%">
+                    </div>
                 </div>
             </div>
         `;
     }
 
-    if (stateData.graphType !== 'scatter') {
-        container.style.display = 'none';
-        return;
-    }
-    
     container.style.display = 'block';
     
-    const sizeInput = container.querySelector('#dot-size-input');
-    const jitterInput = container.querySelector('#jitter-input');
-    
-    // Always re-bind to ensure connectivity
-    sizeInput.oninput = (e) => {
-        state.setDotSize(Number(e.target.value));
-    };
-    
-    jitterInput.oninput = (e) => {
-        state.setJitterWidth(Number(e.target.value));
-    };
-    
-    // Update UI if we are not currently interacting with it
-    if (document.activeElement !== sizeInput) {
-        sizeInput.value = stateData.dotSize;
-    }
-    if (document.activeElement !== jitterInput) {
-        jitterInput.value = stateData.jitterWidth;
+    // Toggle scatter specific
+    const scatterSettings = container.querySelector('#scatter-specific-settings');
+    if (stateData.graphType !== 'scatter') {
+        scatterSettings.style.display = 'none';
+    } else {
+        scatterSettings.style.display = 'block';
     }
     
-    container.querySelector('#dot-size-label').innerText = `Dot Size: ${stateData.dotSize}px`;
-    container.querySelector('#jitter-label').innerText = `Jitter Width: ${stateData.jitterWidth}`;
+    // Bind Font Size
+    const fontInput = container.querySelector('#font-size-input');
+    fontInput.oninput = (e) => state.setFontSize(Number(e.target.value));
+    
+    if (document.activeElement !== fontInput) {
+        fontInput.value = stateData.fontSize;
+    }
+    container.querySelector('#font-size-label').innerText = `Font Size: ${stateData.fontSize}px`;
+    
+    // Bind Scatter Inputs
+    if (stateData.graphType === 'scatter') {
+        const sizeInput = container.querySelector('#dot-size-input');
+        const jitterInput = container.querySelector('#jitter-input');
+        
+        sizeInput.oninput = (e) => state.setDotSize(Number(e.target.value));
+        jitterInput.oninput = (e) => state.setJitterWidth(Number(e.target.value));
+        
+        // Update UI if we are not currently interacting with it
+        if (document.activeElement !== sizeInput) {
+            sizeInput.value = stateData.dotSize;
+        }
+        if (document.activeElement !== jitterInput) {
+            jitterInput.value = stateData.jitterWidth;
+        }
+        
+        container.querySelector('#dot-size-label').innerText = `Dot Size: ${stateData.dotSize}px`;
+        container.querySelector('#jitter-label').innerText = `Jitter Width: ${stateData.jitterWidth}`;
+    }
 }
 
 function renderSavedComparisons(stateData) {
