@@ -16,38 +16,6 @@ async function init() {
     setupProjectListeners();
     setupThemeToggle();
 
-    // Check for project in URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const projectPath = urlParams.get('project');
-    if (projectPath) {
-        // We await this so the initial state is set before other things if needed
-        // But usually it's fine to be async
-        await loadAndRestoreProject(decodeURIComponent(projectPath));
-    }
-    
-    // Initialize Upload Handling
-    initUpload(async (files) => {
-        // Process the received files
-        for (const file of files) {
-            const metadata = parseFilename(file.name);
-            if (!metadata) {
-                console.warn(`Skipping ${file.name}: Invalid filename format`);
-                continue;
-            }
-            
-            try {
-                const data = await parseCSV(file);
-                state.addDataset({
-                    id: file.name,
-                    metadata,
-                    data
-                });
-            } catch (err) {
-                console.error('Error parsing file:', file.name, err);
-            }
-        }
-    });
-    
     // Subscribe to state changes to re-render interface
     state.subscribe((appState, actionType) => {
         // Update Sidebar List (Skip if just a color change to prevent picker losing focus)
@@ -93,6 +61,38 @@ async function init() {
                     <p>Select a dataset to visualize</p>
                 </div>
             `;
+        }
+    });
+
+    // Check for project in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectPath = urlParams.get('project');
+    if (projectPath) {
+        // We await this so the initial state is set before other things if needed
+        // But usually it's fine to be async
+        await loadAndRestoreProject(projectPath);
+    }
+    
+    // Initialize Upload Handling
+    initUpload(async (files) => {
+        // Process the received files
+        for (const file of files) {
+            const metadata = parseFilename(file.name);
+            if (!metadata) {
+                console.warn(`Skipping ${file.name}: Invalid filename format`);
+                continue;
+            }
+            
+            try {
+                const data = await parseCSV(file);
+                state.addDataset({
+                    id: file.name,
+                    metadata,
+                    data
+                });
+            } catch (err) {
+                console.error('Error parsing file:', file.name, err);
+            }
         }
     });
 }
