@@ -2,7 +2,7 @@
  * UI Manager Module
  * Handles DOM updates and user interactions.
  */
-import { state, getGroups, getSelectedGroups } from './state.js';
+import { state, getGroups, getSelectedGroups, PALETTE } from './state.js';
 import { getDefaultColor, isPointIncluded } from './charts.js';
 
 export function setupUIListeners() {
@@ -654,16 +654,20 @@ function renderRecursiveGroup(group, appState, level) {
             item.classList.add('selected');
         }
 
-        // Color Picker
-        const colorInput = document.createElement('input');
-        colorInput.type = 'color';
-        colorInput.className = 'color-picker';
-        colorInput.value = appState.datasetColors[group.id] || getDefaultColor(group.id);
+        // Color Swatch (Custom Picker Trigger)
+        const colorSwatch = document.createElement('div');
+        colorSwatch.className = 'color-swatch-btn';
+        const currentColor = appState.datasetColors[group.id] || getDefaultColor(group.id);
+        colorSwatch.style.backgroundColor = currentColor;
         
-        colorInput.addEventListener('click', (e) => e.stopPropagation());
-        colorInput.addEventListener('input', (e) => {
-             e.stopPropagation();
-             state.setDatasetColor(group.id, e.target.value);
+        // Prevent row selection when clicking color
+        colorSwatch.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const rect = colorSwatch.getBoundingClientRect();
+            openColorPicker(rect.right + 10, rect.top, currentColor, (newColor) => {
+                colorSwatch.style.backgroundColor = newColor;
+                state.setDatasetColor(group.id, newColor);
+            });
         });
 
         // Content
@@ -715,7 +719,7 @@ function renderRecursiveGroup(group, appState, level) {
         item.style.gap = '12px';
         item.style.alignItems = 'center';
         
-        item.appendChild(colorInput);
+        item.appendChild(colorSwatch);
         item.appendChild(textDiv);
 
         // Click Handler
@@ -790,4 +794,188 @@ function showNoteModal(title, initialValue, onSave) {
     overlay.onclick = (e) => {
         if (e.target === overlay) close();
     };
+}
+
+// --- Custom Color Picker ---
+
+// Inject Styles
+const style = document.createElement('style');
+style.textContent = `
+    .color-swatch-btn {
+        width: 20px; 
+        height: 20px; 
+        border-radius: 4px; 
+        border: 1px solid rgba(255,255,255,0.2); 
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+    .color-picker-popup {
+        position: fixed;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 9999;
+        width: 220px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .cp-tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .cp-tab {
+        flex: 1;
+        padding: 8px 0;
+        text-align: center;
+        background: var(--bg-secondary);
+        cursor: pointer;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        border: none;
+        outline: none;
+    }
+    .cp-tab.active {
+        background: var(--bg-card);
+        color: var(--text-primary);
+        font-weight: 500;
+        border-bottom: 2px solid var(--primary-color, #3b82f6);
+    }
+    .cp-content {
+        padding: 12px;
+    }
+    .palette-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 6px;
+    }
+    .palette-item {
+        width: 100%;
+        aspect-ratio: 1;
+        border-radius: 4px;
+        cursor: pointer;
+        border: 1px solid rgba(0,0,0,0.1);
+    }
+    .palette-item:hover {
+        transform: scale(1.1);
+        border-color: #fff;
+    }
+    .custom-input-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .native-trigger {
+        width: 100%;
+        height: 40px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+`;
+document.head.appendChild(style);
+
+function openColorPicker(x, y, initialColor, onSelect) {
+    // Remove existing
+    const existing = document.getElementById('custom-color-picker');
+    if (existing) existing.remove();
+
+    const popup = document.createElement('div');
+    popup.id = 'custom-color-picker';
+    popup.className = 'color-picker-popup';
+    
+    // Ensure it's on screen
+    // Simple logic: if x + width > window.width, shift left
+    // if y + height > window.height, shift up
+    
+    // UI Structure
+    popup.innerHTML = `
+        <div class="cp-tabs">
+            <button class="cp-tab active" data-tab="palette">Palette</button>
+            <button class="cp-tab" data-tab="custom">Custom</button>
+        </div>
+        <div class="cp-content">
+            <div id="cp-view-palette" style="display:block">
+                <div class="palette-grid" id="cp-palette-grid"></div>
+            </div>
+            <div id="cp-view-custom" style="display:none">
+                <div class="custom-input-container">
+                    <div style="font-size:0.9rem; margin-bottom:4px; color:var(--text-secondary)">Pick any color:</div>
+                     <div style="display:flex; gap:8px;">
+                        <input type="color" id="cp-native-input" class="native-trigger" value="${initialColor}">
+                     </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(popup);
+    
+    // Positioning (after append to get dimensions)
+    const rect = popup.getBoundingClientRect();
+    let left = x;
+    let top = y;
+    
+    if (left + rect.width > window.innerWidth) {
+       left = x - rect.width - 20; // Show on left side if too far right
+    }
+    if (top + rect.height > window.innerHeight) {
+        top = window.innerHeight - rect.height - 10;
+    }
+    
+    popup.style.left = `${left}px`;
+    popup.style.top = `${top}px`;
+
+    // Tabs Logic
+    const tabs = popup.querySelectorAll('.cp-tab');
+    const viewPalette = popup.querySelector('#cp-view-palette');
+    const viewCustom = popup.querySelector('#cp-view-custom');
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+             tabs.forEach(t => t.classList.remove('active'));
+             tab.classList.add('active');
+             
+             if (tab.dataset.tab === 'palette') {
+                 viewPalette.style.display = 'block';
+                 viewCustom.style.display = 'none';
+             } else {
+                 viewPalette.style.display = 'none';
+                 viewCustom.style.display = 'block';
+             }
+        });
+    });
+
+    // Populate Palette
+    const grid = popup.querySelector('#cp-palette-grid');
+    PALETTE.forEach(color => {
+        const item = document.createElement('div');
+        item.className = 'palette-item';
+        item.style.backgroundColor = color;
+        item.onclick = () => {
+            onSelect(color);
+            popup.remove();
+        };
+        grid.appendChild(item);
+    });
+
+    // Native Logic
+    const nativeInput = popup.querySelector('#cp-native-input');
+    nativeInput.addEventListener('input', (e) => {
+        onSelect(e.target.value);
+    });
+    // Don't close immediately on native input interaction, user might drag
+
+    // Close on click outside
+    const outsideListener = (e) => {
+        if (!popup.contains(e.target)) {
+            popup.remove();
+            document.removeEventListener('mousedown', outsideListener);
+        }
+    };
+    // Delay adding listener to avoid immediate close from the click that opened it
+    setTimeout(() => {
+        document.addEventListener('mousedown', outsideListener);
+    }, 0);
 }

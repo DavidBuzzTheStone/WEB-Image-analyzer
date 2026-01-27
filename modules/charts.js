@@ -2,7 +2,7 @@
  * Charts Module
  * Wrapper for Plotly.js to render scientific scatter plots.
  */
-import { getGroupOrder } from './state.js';
+import { getGroupOrder, PALETTE } from './state.js';
 
 export function getDefaultColor(id) {
     let hash = 0;
@@ -99,16 +99,7 @@ function organizeSubgroups(datasets, viewMode) {
     return [{ label: 'All', datasets }];
 }
 
-// Colors for comparison mode
-const PALETTE = [
-    '#38bdf8', // Light Blue
-    '#f472b6', // Pink
-    '#a3e635', // Lime
-    '#fbbf24', // Amber
-    '#c084fc', // Purple
-    '#22d3ee', // Cyan
-    '#f87171'  // Red
-];
+
 
 // Symbols for distinguishing groups (e.g., wells or images)
 const SYMBOLS = [
