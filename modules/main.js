@@ -16,38 +16,6 @@ async function init() {
     setupProjectListeners();
     setupThemeToggle();
 
-    // Check for project in URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const projectPath = urlParams.get('project');
-    if (projectPath) {
-        // We await this so the initial state is set before other things if needed
-        // But usually it's fine to be async
-        await loadAndRestoreProject(decodeURIComponent(projectPath));
-    }
-    
-    // Initialize Upload Handling
-    initUpload(async (files) => {
-        // Process the received files
-        for (const file of files) {
-            const metadata = parseFilename(file.name);
-            if (!metadata) {
-                console.warn(`Skipping ${file.name}: Invalid filename format`);
-                continue;
-            }
-            
-            try {
-                const data = await parseCSV(file);
-                state.addDataset({
-                    id: file.name,
-                    metadata,
-                    data
-                });
-            } catch (err) {
-                console.error('Error parsing file:', file.name, err);
-            }
-        }
-    });
-    
     // Subscribe to state changes to re-render interface
     state.subscribe((appState, actionType) => {
         // Update Sidebar List (Skip if just a color change to prevent picker losing focus)
@@ -93,6 +61,45 @@ async function init() {
                     <p>Select a dataset to visualize</p>
                 </div>
             `;
+        }
+    });
+
+    // Check for project in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectPath = urlParams.get('project');
+    if (projectPath) {
+        console.log('Found project in URL:', projectPath);
+        // We await this so the initial state is set before other things if needed
+        // But usually it's fine to be async
+        const success = await loadAndRestoreProject(projectPath);
+        if (success) {
+            console.log('Initial project load complete. Forcing final render check.');
+            // Force a re-announcement of the loaded state to ensure UI catches up if it missed anything
+            // or if the previous notifications happened too fast/before DOM settle.
+            state.notify('force_refresh'); 
+        }
+    }
+    
+    // Initialize Upload Handling
+    initUpload(async (files) => {
+        // Process the received files
+        for (const file of files) {
+            const metadata = parseFilename(file.name);
+            if (!metadata) {
+                console.warn(`Skipping ${file.name}: Invalid filename format`);
+                continue;
+            }
+            
+            try {
+                const data = await parseCSV(file);
+                state.addDataset({
+                    id: file.name,
+                    metadata,
+                    data
+                });
+            } catch (err) {
+                console.error('Error parsing file:', file.name, err);
+            }
         }
     });
 }
