@@ -48,11 +48,11 @@ const SYMBOLS = [
  */
 // Update signature
 // Update signature
-export function renderChart(containerId, groups, aggregationMode, viewMode, datasetColors, isDarkMode = true, thresholds = null, graphType = 'scatter', graphMetric = 'int', dotSize = 8, jitterWidth = 0) {
+export function renderChart(containerId, groups, aggregationMode, viewMode, datasetColors, isDarkMode = true, thresholds = null, graphType = 'scatter', graphMetric = 'int', dotSize = 8, jitterWidth = 0, fontSize = 12) {
     // Theme colors
     const textColor = isDarkMode ? '#f8fafc' : '#1e293b';
     const gridColor = isDarkMode ? '#334155' : '#e2e8f0';
-    const font = { family: 'Inter, sans-serif', color: isDarkMode ? '#94a3b8' : '#64748b' };
+    const font = { family: 'Inter, sans-serif', color: isDarkMode ? '#94a3b8' : '#64748b', size: fontSize };
     
     let chartData;
 

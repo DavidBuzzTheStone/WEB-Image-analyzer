@@ -83,7 +83,8 @@ async function init() {
                 appState.graphType,
                 appState.graphMetric,
                 appState.dotSize,
-                appState.jitterWidth
+                appState.jitterWidth,
+                appState.fontSize
             );
         } else {
             // Clear chart or show placeholder
