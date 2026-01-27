@@ -1,0 +1,14 @@
+# System Files
+.DS_Store
+Thumbs.db
+
+# Project Data (Persisted on Server)
+projects/
+*.log
+
+# Backups
+*_backup.css
+*.bak
+
+# Environment / Secret files (if any)
+.env
