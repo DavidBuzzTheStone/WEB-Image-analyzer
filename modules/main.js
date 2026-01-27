@@ -75,8 +75,11 @@ async function init() {
         if (success) {
             console.log('Initial project load complete. Forcing final render check.');
             // Force a re-announcement of the loaded state to ensure UI catches up if it missed anything
-            // or if the previous notifications happened too fast/before DOM settle.
-            state.notify('force_refresh'); 
+            // Use setTimeout to ensure we yield to event loop and let DOM settle
+            setTimeout(() => {
+                console.log('Executing forced refresh');
+                state.notify('force_refresh'); 
+            }, 100); 
         }
     }
     
