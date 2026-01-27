@@ -9,6 +9,40 @@ let selectedItem = null; // Primary selection (last clicked)
 let selectedItems = []; // Multi-selection
 let clipboard = { items: [], operation: null }; // { items: [], operation: 'copy'|'cut' } 
 
+/**
+ * Loads a project and restores the application state.
+ * @param {string} filePath - Relative path to the project file
+ */
+export async function loadAndRestoreProject(filePath) {
+    try {
+        const projectData = await loadProject(filePath);
+        
+        state.setProjectFilePath(filePath);
+        
+        // Restore State
+        if (projectData.datasets) {
+            state.setDatasets(projectData.datasets);
+            if (projectData.thresholds) state.setThresholds(projectData.thresholds);
+            if (projectData.viewMode) state.setViewMode(projectData.viewMode);
+            if (projectData.expandedIds) state.setExpandedIds(projectData.expandedIds);
+            if (projectData.graphType) state.setGraphType(projectData.graphType);
+            if (projectData.graphMetric) state.setGraphMetric(projectData.graphMetric);
+            if (projectData.datasetColors) state.setDatasetColors(projectData.datasetColors);
+            if (projectData.savedComparisons) state.setSavedComparisons(projectData.savedComparisons);
+            
+            state.setProjectNotes(projectData.projectNotes || '');
+            
+            state.markAsLoaded();
+            console.log(`Project loaded: ${filePath}`);
+        }
+        return true;
+    } catch (err) {
+        console.error("Failed to load project:", err);
+        alert(`Failed to load project: ${filePath}`);
+        return false;
+    }
+}
+
 export function setupProjectListeners() {
     // Save (Quick Save or Save As)
     const saveBtn = document.getElementById('save-project-btn');
@@ -286,27 +320,11 @@ function openModal(mode) {
                 document.body.removeChild(overlay);
             } else {
                 if (!selectedItem || selectedItem.type !== 'file') return;
-                const projectData = await loadProject(selectedItem.path);
                 
-                state.setProjectFilePath(selectedItem.path);
-                
-                // Restore State
-                if (projectData.datasets) {
-                    state.setDatasets(projectData.datasets);
-                    if (projectData.thresholds) state.setThresholds(projectData.thresholds);
-                    if (projectData.viewMode) state.setViewMode(projectData.viewMode);
-                    if (projectData.expandedIds) state.setExpandedIds(projectData.expandedIds);
-                    if (projectData.graphType) state.setGraphType(projectData.graphType);
-                    if (projectData.graphMetric) state.setGraphMetric(projectData.graphMetric);
-                    if (projectData.datasetColors) state.setDatasetColors(projectData.datasetColors);
-                    if (projectData.savedComparisons) state.setSavedComparisons(projectData.savedComparisons);
-                    
-                    state.setProjectNotes(projectData.projectNotes || '');
-                    
-                    state.markAsLoaded();
+                const success = await loadAndRestoreProject(selectedItem.path);
+                if (success) {
+                     document.body.removeChild(overlay);
                 }
-                
-                document.body.removeChild(overlay);
             }
         } catch (err) {
             console.error(err);
@@ -451,6 +469,7 @@ function renderBrowserItems(container, items, pathStr, mode, nameInput, actionBt
                 <span>${item.name}</span>
             </div>
             <div class="browser-item-actions" style="display:flex; gap:6px;">
+                 <button class="text-btn small link-btn" title="Get Link" style="padding:4px 6px; background: var(--bg-tertiary); border-radius: 4px; border: 1px solid var(--border-color);">🔗</button>
                  <button class="text-btn small rename-btn" title="Rename" style="padding:4px 6px; background: var(--bg-tertiary); border-radius: 4px; border: 1px solid var(--border-color);">✏️</button>
                  <button class="text-btn small copy-btn" title="Copy" style="padding:4px 6px; background: var(--bg-tertiary); border-radius: 4px; border: 1px solid var(--border-color);">📋</button>
                  <button class="text-btn small cut-btn" title="Cut" style="padding:4px 6px; background: var(--bg-tertiary); border-radius: 4px; border: 1px solid var(--border-color);">✂️</button>
@@ -459,6 +478,24 @@ function renderBrowserItems(container, items, pathStr, mode, nameInput, actionBt
         `;
         
         // Add listeners
+        const linkBtn = div.querySelector('.link-btn');
+        if (item.type === 'folder') {
+             linkBtn.style.display = 'none';
+        } else {
+            linkBtn.onclick = (e) => {
+                e.stopPropagation();
+                const url = `${window.location.origin}${window.location.pathname}?project=${encodeURIComponent(item.path)}`;
+                navigator.clipboard.writeText(url).then(() => {
+                    const original = linkBtn.innerText;
+                    linkBtn.innerText = '✅';
+                    setTimeout(() => linkBtn.innerText = original, 1000);
+                }).catch(err => {
+                    console.error('Failed to copy link: ', err);
+                    alert('Failed to copy link');
+                });
+            };
+        }
+
         const renameBtn = div.querySelector('.rename-btn');
         renameBtn.onclick = async (e) => {
             e.stopPropagation();

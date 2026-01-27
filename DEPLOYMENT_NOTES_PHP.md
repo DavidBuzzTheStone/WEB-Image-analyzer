@@ -21,4 +21,10 @@ DEPLOYMENT TO HOSTINGER (PHP VERSION)
     -   Open your website URL. Load "Project" -> "Load Project". It should show an empty directory or list existing files if any.
     -   Try saving a project.
 
+5.  **What NOT to Upload**:
+    -   `node_modules/`: **NOT needed**. This folder contains Node.js libraries which are not used by the PHP version.
+    -   `server.js`: NOT needed (replaced by PHP `api/` scripts).
+    -   `package.json` / `package-lock.json`: NOT needed.
+    -   `.git/` or `.DS_Store`: NOT needed.
+
 Note: Since this uses standard PHP, no Node.js server process is needed. It works on Shared Hosting.

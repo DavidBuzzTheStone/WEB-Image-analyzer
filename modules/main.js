@@ -8,13 +8,22 @@ import { renderChart } from './charts.js';
 import { getGroups, getSelectedGroups } from './state.js';
 import { initUpload } from './upload.js';
 
-import { setupProjectListeners } from './project_ui.js';
+import { setupProjectListeners, loadAndRestoreProject } from './project_ui.js';
 
 // Initialize
-function init() {
+async function init() {
     setupUIListeners();
     setupProjectListeners();
     setupThemeToggle();
+
+    // Check for project in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectPath = urlParams.get('project');
+    if (projectPath) {
+        // We await this so the initial state is set before other things if needed
+        // But usually it's fine to be async
+        await loadAndRestoreProject(decodeURIComponent(projectPath));
+    }
     
     // Initialize Upload Handling
     initUpload(async (files) => {
