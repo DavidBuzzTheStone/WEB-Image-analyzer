@@ -133,7 +133,7 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
     let chartData;
 
     try {
-        switch (graphType) {
+        switch (graphType) { 
             case 'histogram':
                 chartData = buildHistogram(groups, viewMode, datasetColors, thresholds, graphMetric);
                 break;
