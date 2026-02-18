@@ -532,19 +532,7 @@ function buildBarChart(groups, viewMode, datasetColors, thresholds, metric) {
                      barText += `<br>N = ${wellCount}`;
                 }
 
-                let dotCount = 0;
-                sub.datasets.forEach(ds => {
-                     const validRows = ds.data.filter(r => isPointIncluded(r, thresholds));
-                     dotCount += validRows.length;
-                });
 
-                let barText = `total dots: ${dotCount}`;
-                
-                if (viewMode === 'parameter') {
-                     const uniqueWells = new Set(sub.datasets.map(d => d.metadata.well));
-                     const wellCount = uniqueWells.size;
-                     barText += `<br>N = ${wellCount}`;
-                }
 
                 console.log(`[BarChart] ${fullLabel} - View: ${viewMode}, Dots: ${dotCount}`);
 
