@@ -472,7 +472,7 @@ function buildBarChart(groups, viewMode, datasetColors, thresholds, metric) {
     const yValues = [];
     const errorValues = [];
     const colorValues = [];
-    const hoverTexts = [];
+    const hoverTexts = []; 
     const textValues = [];
     
     // Iterate all groups/subgroups to collect data
