@@ -474,7 +474,6 @@ function buildBarChart(groups, viewMode, datasetColors, thresholds, metric) {
     const colorValues = [];
     const hoverTexts = [];
     const textValues = [];
-    const textValues = [];
     
     // Iterate all groups/subgroups to collect data
     groups.forEach((group) => {
