@@ -472,8 +472,8 @@ function buildBarChart(groups, viewMode, datasetColors, thresholds, metric) {
     const yValues = [];
     const errorValues = [];
     const colorValues = [];
-    const hoverTexts = []; 
     const textValues = [];
+    const textPositionValues = [];
     
     // Iterate all groups/subgroups to collect data
     groups.forEach((group) => {
@@ -532,28 +532,27 @@ function buildBarChart(groups, viewMode, datasetColors, thresholds, metric) {
                      barText += `<br>N = ${wellCount}`;
                 }
 
-
-
                 console.log(`[BarChart] ${fullLabel} - View: ${viewMode}, Dots: ${dotCount}`);
 
                 xLabels.push(fullLabel);
                 yValues.push(stats.mean);
                 errorValues.push(stats.error);
                 colorValues.push((groups.length > 1 || subgroups.length === 1) ? groupColor : PALETTE[subIndex % PALETTE.length]);
-                hoverTexts.push(`${fullLabel}: ${stats.mean.toFixed(2)} ± ${stats.error.toFixed(2)}`);
+                
                 textValues.push(barText);
+                
+                // Calculate position for text (Mean + Error)
+                // We align the text trace to the top of the error bar
+                textPositionValues.push(stats.mean + (stats.error || 0));
             }
         });
     });
     
     if (yValues.length === 0) return { traces: [], layout: {} };
 
-    const trace = {
+    const barTrace = {
         x: xLabels,
         y: yValues,
-        text: textValues,
-        texttemplate: '%{text}',
-        textposition: 'outside',
         error_y: {
             type: 'data',
             array: errorValues,
@@ -567,9 +566,24 @@ function buildBarChart(groups, viewMode, datasetColors, thresholds, metric) {
         hovertemplate: '%{x}<br>%{y:.2f} ± %{error_y.array:.2f}<extra></extra>',
         showlegend: false
     };
+    
+    // Trace for Text Labels (positioned above error bars)
+    const textTrace = {
+        x: xLabels,
+        y: textPositionValues,
+        text: textValues,
+        mode: 'text',
+        type: 'scatter',
+        textposition: 'top center',
+        hoverinfo: 'skip',
+        showlegend: false,
+        textfont: {
+            size: 11
+        }
+    };
 
     return {
-        traces: [trace],
+        traces: [barTrace, textTrace],
         layout: {
              title: `Average ${getMetricLabel(metric)}`,
              yaxis: { title: `Mean ${getMetricLabel(metric)}`, automargin: true },
