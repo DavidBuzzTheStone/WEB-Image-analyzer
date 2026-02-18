@@ -12,3 +12,8 @@ projects/
 
 # Environment / Secret files (if any)
 .env
+test_project.json
+
+# Local dependencies and testing
+node_modules/
+.vitest-result.json

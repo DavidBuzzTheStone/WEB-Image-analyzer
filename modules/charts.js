@@ -473,6 +473,7 @@ function buildBarChart(groups, viewMode, datasetColors, thresholds, metric) {
     const errorValues = [];
     const colorValues = [];
     const hoverTexts = [];
+    const textValues = [];
     
     // Iterate all groups/subgroups to collect data
     groups.forEach((group) => {
@@ -517,11 +518,28 @@ function buildBarChart(groups, viewMode, datasetColors, thresholds, metric) {
                     fullLabel = `${meta.parameter} - Well ${meta.well} - Image ${meta.imageNumber}`;
                 }
 
+                let dotCount = 0;
+                sub.datasets.forEach(ds => {
+                     const validRows = ds.data.filter(r => isPointIncluded(r, thresholds));
+                     dotCount += validRows.length;
+                });
+
+                let barText = `total dots: ${dotCount}`;
+                
+                if (viewMode === 'parameter') {
+                     const uniqueWells = new Set(sub.datasets.map(d => d.metadata.well));
+                     const wellCount = uniqueWells.size;
+                     barText += `<br>N = ${wellCount}`;
+                }
+
+                console.log(`[BarChart] ${fullLabel} - View: ${viewMode}, Dots: ${dotCount}`);
+
                 xLabels.push(fullLabel);
                 yValues.push(stats.mean);
                 errorValues.push(stats.error);
                 colorValues.push((groups.length > 1 || subgroups.length === 1) ? groupColor : PALETTE[subIndex % PALETTE.length]);
                 hoverTexts.push(`${fullLabel}: ${stats.mean.toFixed(2)} ± ${stats.error.toFixed(2)}`);
+                textValues.push(barText);
             }
         });
     });
@@ -531,6 +549,9 @@ function buildBarChart(groups, viewMode, datasetColors, thresholds, metric) {
     const trace = {
         x: xLabels,
         y: yValues,
+        text: textValues,
+        texttemplate: '%{text}',
+        textposition: 'outside',
         error_y: {
             type: 'data',
             array: errorValues,
@@ -559,7 +580,70 @@ function buildBarChart(groups, viewMode, datasetColors, thresholds, metric) {
     };
 }
 
-function calculateHierarchicalStats(datasets, viewMode, thresholds, metric) {
+// Helpers
+function createLine(orientation, value, style) {
+    if (orientation === 'h') {
+        return {
+            type: 'line',
+            x0: 0, x1: 1, xref: 'paper',
+            y0: value, y1: value,
+            line: style
+        };
+    } else {
+        return {
+            type: 'line',
+            x0: value, x1: value,
+            y0: 0, y1: 1, yref: 'paper',
+            line: style
+        };
+    }
+}
+
+export function isPointIncluded(row, thresholds) {
+    if (!thresholds || !thresholds.values) return true;
+    const v = thresholds.values;
+    
+    if (thresholds.type === 'area_int') {
+        if (v.intMin !== undefined && row.IntegratedInt < v.intMin) return false;
+        if (v.intMax !== undefined && row.IntegratedInt > v.intMax) return false;
+        if (v.areaMin !== undefined && row.NArea < v.areaMin) return false;
+        if (v.areaMax !== undefined && row.NArea > v.areaMax) return false;
+    } else if (thresholds.type === 'density') {
+        const density = row.IntegratedInt / row.NArea;
+        if (v.densityMin !== undefined && density < v.densityMin) return false;
+        if (v.densityMax !== undefined && density > v.densityMax) return false;
+    }
+    
+    return true;
+}
+
+
+
+export function calculateStats(data) {
+    const xVals = data.map(d => d.NArea).filter(v => !isNaN(v));
+    const yVals = data.map(d => d.IntegratedInt).filter(v => !isNaN(v));
+
+    return {
+        meanNArea: mean(xVals),
+        meanInt: mean(yVals),
+        medianNArea: median(xVals),
+        medianInt: median(yVals)
+    };
+}
+
+export function mean(arr) {
+    if (arr.length === 0) return 0;
+    return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+
+export function median(arr) {
+    if (arr.length === 0) return 0;
+    const sorted = [...arr].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+export function calculateHierarchicalStats(datasets, viewMode, thresholds, metric) {
     // 1. Calculate Image Means (Base Unit)
     const imageStats = [];
     
@@ -639,70 +723,6 @@ function getMetricLabel(metric) {
         case 'count': return 'Count';
         default: return '';
     }
-}
-
-
-// Helpers
-function createLine(orientation, value, style) {
-    if (orientation === 'h') {
-        return {
-            type: 'line',
-            x0: 0, x1: 1, xref: 'paper',
-            y0: value, y1: value,
-            line: style
-        };
-    } else {
-        return {
-            type: 'line',
-            x0: value, x1: value,
-            y0: 0, y1: 1, yref: 'paper',
-            line: style
-        };
-    }
-}
-
-export function isPointIncluded(row, thresholds) {
-    if (!thresholds || !thresholds.values) return true;
-    const v = thresholds.values;
-    
-    if (thresholds.type === 'area_int') {
-        if (v.intMin !== undefined && row.IntegratedInt < v.intMin) return false;
-        if (v.intMax !== undefined && row.IntegratedInt > v.intMax) return false;
-        if (v.areaMin !== undefined && row.NArea < v.areaMin) return false;
-        if (v.areaMax !== undefined && row.NArea > v.areaMax) return false;
-    } else if (thresholds.type === 'density') {
-        const density = row.IntegratedInt / row.NArea;
-        if (v.densityMin !== undefined && density < v.densityMin) return false;
-        if (v.densityMax !== undefined && density > v.densityMax) return false;
-    }
-    
-    return true;
-}
-
-
-
-function calculateStats(data) {
-    const xVals = data.map(d => d.NArea).filter(v => !isNaN(v));
-    const yVals = data.map(d => d.IntegratedInt).filter(v => !isNaN(v));
-
-    return {
-        meanNArea: mean(xVals),
-        meanInt: mean(yVals),
-        medianNArea: median(xVals),
-        medianInt: median(yVals)
-    };
-}
-
-function mean(arr) {
-    if (arr.length === 0) return 0;
-    return arr.reduce((a, b) => a + b, 0) / arr.length;
-}
-
-function median(arr) {
-    if (arr.length === 0) return 0;
-    const sorted = [...arr].sort((a, b) => a - b);
-    const mid = Math.floor(sorted.length / 2);
-    return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
 // Hacky check for the "Mean of Wells" vs "Mean of Images" distinction
