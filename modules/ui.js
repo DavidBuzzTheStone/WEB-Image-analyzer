@@ -159,6 +159,7 @@ export function renderUI(appState, groups) {
     renderSidebarList(groups, appState);
     renderThresholdControls(appState);
     renderSavedComparisons(appState);
+    renderSavedThresholds(appState);
 }
 
 function renderGraphSettings(stateData) {
@@ -403,6 +404,17 @@ function renderThresholdControls(stateData) {
              state.setThresholdAdjusting(true);
         });
         
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'secondary-btn small';
+        saveBtn.innerText = 'Save';
+        saveBtn.addEventListener('click', () => {
+             const defaultName = formatThresholdName(t);
+             const name = prompt('Name for these settings:', defaultName);
+             if (name) {
+                 state.saveThresholds(name);
+             }
+        });
+
         const clearBtn = document.createElement('button');
         clearBtn.className = 'text-btn danger';
         clearBtn.innerText = 'Remove';
@@ -411,11 +423,89 @@ function renderThresholdControls(stateData) {
         });
         
         actionRow.appendChild(editBtn);
+        actionRow.appendChild(saveBtn);
         actionRow.appendChild(clearBtn);
     }
     
     controls.appendChild(actionRow);
 }
+
+function renderSavedThresholds(stateData) {
+    const list = document.getElementById('saved-thresholds-list');
+    if (!list) return;
+
+    if (!stateData.savedThresholds || stateData.savedThresholds.length === 0) {
+        list.innerHTML = '';
+        list.style.display = 'none';
+        return;
+    }
+
+    list.style.display = 'block';
+    list.innerHTML = '<div class="label-small" style="margin-bottom:4px">Saved Settings</div>';
+
+    stateData.savedThresholds.forEach(th => {
+        const row = document.createElement('div');
+        row.className = 'list-item';
+        row.style.display = 'flex';
+        row.style.justifyContent = 'space-between';
+        row.style.alignItems = 'center';
+        row.style.cursor = 'pointer';
+        row.style.padding = '4px 8px';
+        
+        const label = document.createElement('span');
+        label.innerText = th.name;
+        label.style.fontSize = '0.9em';
+
+        // Delete button
+        const delBtn = document.createElement('button');
+        delBtn.innerHTML = '🗑';
+        delBtn.className = 'text-btn danger small';
+        delBtn.style.padding = '0 2px';
+        delBtn.onclick = (e) => {
+            e.stopPropagation();
+            if (confirm(`Delete saved threshold "${th.name}"?`)) {
+                state.deleteThresholds(th.id);
+            }
+        };
+
+        row.appendChild(label);
+        row.appendChild(delBtn);
+        
+        // Click to apply
+        row.onclick = () => {
+            // Apply these thresholds
+            // We need to make sure we don't just overwrite, but maybe we should?
+            // Yes, user clicked it, so we load it.
+            if (confirm(`Apply settings "${th.name}"?`)) {
+                state.setThresholds({
+                    ...th.thresholds,
+                    isAdjusting: false // Apply immediately
+                });
+            }
+        };
+
+        list.appendChild(row);
+    });
+}
+
+function formatThresholdName(thresholds) {
+    const v = thresholds.values;
+    const fmt = (min, max) => {
+        const minStr = min !== undefined ? min : '-';
+        const maxStr = max !== undefined ? max : '-';
+        return `(${minStr}; ${maxStr})`;
+    };
+
+    if (thresholds.type === 'density') {
+        const range = fmt(v.densityMin, v.densityMax);
+        return `Density: ${range}`;
+    } else {
+        const intRange = fmt(v.intMin, v.intMax);
+        const areaRange = fmt(v.areaMin, v.areaMax);
+        return `Int.: ${intRange}, Area: ${areaRange}`;
+    }
+}
+
 
 function createInputPair(label, prefix, values) {
     const div = document.createElement('div');

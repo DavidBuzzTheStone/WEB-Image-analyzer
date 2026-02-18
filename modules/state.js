@@ -27,6 +27,7 @@ const initialState = {
     fontSize: 12,
     projectNotes: '',
     savedComparisons: [],
+    savedThresholds: [],
     isDirty: false, 
     currentFilePath: null,
     listeners: [],
@@ -256,6 +257,32 @@ export const state = {
     setSavedComparisons: (list) => {
         currentState.savedComparisons = list || [];
         state.notify('saved_comparison_update');
+    },
+
+    saveThresholds: (name) => {
+        if (!currentState.thresholds) return;
+        
+        const saved = {
+            id: Date.now(),
+            name: name,
+            thresholds: JSON.parse(JSON.stringify(currentState.thresholds)) // Deep copy
+        };
+        
+        currentState.savedThresholds = currentState.savedThresholds || [];
+        currentState.savedThresholds.push(saved);
+        state.notify('saved_threshold_update');
+    },
+
+    deleteThresholds: (id) => {
+        if (currentState.savedThresholds) {
+            currentState.savedThresholds = currentState.savedThresholds.filter(t => t.id !== id);
+            state.notify('saved_threshold_update');
+        }
+    },
+
+    setSavedThresholds: (list) => {
+        currentState.savedThresholds = list || [];
+        state.notify('saved_threshold_update');
     },
 
     setSelectedIds: (ids) => {
