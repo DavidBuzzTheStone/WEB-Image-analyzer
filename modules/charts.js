@@ -141,7 +141,7 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
                 chartData = buildBoxPlot(groups, viewMode, datasetColors, thresholds, graphMetric);
                 break;
             case 'bar':
-                chartData = buildBarChart(groups, viewMode, datasetColors, thresholds, graphMetric);
+                chartData = buildBarChart(groups, viewMode, datasetColors, thresholds, graphMetric, fontSize);
                 break;
             case 'scatter':
             default:
@@ -467,7 +467,7 @@ function buildBoxPlot(groups, viewMode, datasetColors, thresholds, metric) {
     };
 }
 
-function buildBarChart(groups, viewMode, datasetColors, thresholds, metric) {
+function buildBarChart(groups, viewMode, datasetColors, thresholds, metric, fontSize=12) {
     const xLabels = [];
     const yValues = [];
     const errorValues = [];
@@ -539,6 +539,7 @@ function buildBarChart(groups, viewMode, datasetColors, thresholds, metric) {
                 errorValues.push(stats.error);
                 colorValues.push((groups.length > 1 || subgroups.length === 1) ? groupColor : PALETTE[subIndex % PALETTE.length]);
                 
+                
                 textValues.push(barText);
                 
                 // Calculate position for text (Mean + Error)
@@ -578,7 +579,7 @@ function buildBarChart(groups, viewMode, datasetColors, thresholds, metric) {
         hoverinfo: 'skip',
         showlegend: false,
         textfont: {
-            size: 11
+            size: fontSize 
         }
     };
 
@@ -595,6 +596,7 @@ function buildBarChart(groups, viewMode, datasetColors, thresholds, metric) {
         }
     };
 }
+
 
 // Helpers
 function createLine(orientation, value, style) {
