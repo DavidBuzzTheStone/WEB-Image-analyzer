@@ -124,7 +124,7 @@ const SYMBOLS = [
  */
 // Update signature
 // Update signature
-export function renderChart(containerId, groups, aggregationMode, viewMode, datasetColors, isDarkMode = true, thresholds = null, graphType = 'scatter', graphMetric = 'int', dotSize = 8, jitterWidth = 0, fontSize = 12) {
+export function renderChart(containerId, groups, aggregationMode, viewMode, datasetColors, isDarkMode = true, thresholds = null, graphType = 'scatter', graphMetric = 'int', dotSize = 8, jitterWidth = 0, fontSize = 12, logScale = false) {
     // Theme colors
     const textColor = isDarkMode ? '#f8fafc' : '#1e293b';
     const gridColor = isDarkMode ? '#334155' : '#e2e8f0';
@@ -133,7 +133,7 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
     let chartData;
 
     try {
-        switch (graphType) { 
+        switch (graphType) {
             case 'histogram':
                 chartData = buildHistogram(groups, viewMode, datasetColors, thresholds, graphMetric);
                 break;
@@ -142,6 +142,12 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
                 break;
             case 'bar':
                 chartData = buildBarChart(groups, viewMode, datasetColors, thresholds, graphMetric, fontSize);
+                break;
+            case 'violin':
+                chartData = buildViolinPlot(groups, viewMode, datasetColors, thresholds, graphMetric, logScale);
+                break;
+            case 'raincloud':
+                chartData = buildRaincloudPlot(groups, viewMode, datasetColors, thresholds, graphMetric, logScale);
                 break;
             case 'scatter':
             default:
@@ -159,7 +165,7 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)',
         font: font,
-        showlegend: graphType !== 'box',
+        showlegend: !['box', 'violin', 'raincloud'].includes(graphType),
         legend: {
             orientation: 'h',
             yanchor: 'top',
@@ -192,6 +198,11 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
             text: chartData.layout.title,
             font: { color: textColor }
         };
+    }
+
+    if (logScale && layout.yaxis) {
+        layout.yaxis.type = 'log';
+        delete layout.yaxis.rangemode;
     }
 
     const config = {
@@ -463,6 +474,110 @@ function buildBoxPlot(groups, viewMode, datasetColors, thresholds, metric) {
         layout: {
             title: `Box Plot of ${getMetricLabel(metric)}`,
             yaxis: { title: getMetricLabel(metric), automargin: true },
+        }
+    };
+}
+
+function buildViolinPlot(groups, viewMode, datasetColors, thresholds, metric, logScale) {
+    const traces = [];
+
+    groups.forEach((group) => {
+        const groupColor = datasetColors?.[group.id] ?? getDefaultColor(group.id);
+        const subgroups = organizeSubgroups(group.datasets, viewMode);
+
+        subgroups.forEach((sub, subIndex) => {
+            const values = [];
+            sub.datasets.forEach(ds => {
+                ds.data.forEach(row => {
+                    if (isPointIncluded(row, thresholds)) {
+                        const v = getMetricValue(row, metric);
+                        if (!logScale || v > 0) values.push(v);
+                    }
+                });
+            });
+
+            if (values.length === 0) return;
+
+            const traceName = (groups.length > 1 && group.label !== sub.label)
+                ? `${group.label} - ${sub.label}` : sub.label;
+            const traceColor = (groups.length > 1 || sub.datasets.length === 1)
+                ? groupColor : PALETTE[subIndex % PALETTE.length];
+
+            traces.push({
+                y: values,
+                type: 'violin',
+                name: traceName,
+                box: { visible: true },
+                meanline: { visible: true },
+                points: 'outliers',
+                jitter: 0.3,
+                marker: { color: traceColor, size: 4 },
+                line: { color: traceColor },
+                fillcolor: traceColor,
+                opacity: 0.75,
+            });
+        });
+    });
+
+    return {
+        traces,
+        layout: {
+            title: `Violin Plot of ${getMetricLabel(metric)}`,
+            yaxis: { title: getMetricLabel(metric), automargin: true },
+            violinmode: 'group',
+        }
+    };
+}
+
+function buildRaincloudPlot(groups, viewMode, datasetColors, thresholds, metric, logScale) {
+    const traces = [];
+
+    groups.forEach((group) => {
+        const groupColor = datasetColors?.[group.id] ?? getDefaultColor(group.id);
+        const subgroups = organizeSubgroups(group.datasets, viewMode);
+
+        subgroups.forEach((sub, subIndex) => {
+            const values = [];
+            sub.datasets.forEach(ds => {
+                ds.data.forEach(row => {
+                    if (isPointIncluded(row, thresholds)) {
+                        const v = getMetricValue(row, metric);
+                        if (!logScale || v > 0) values.push(v);
+                    }
+                });
+            });
+
+            if (values.length === 0) return;
+
+            const traceName = (groups.length > 1 && group.label !== sub.label)
+                ? `${group.label} - ${sub.label}` : sub.label;
+            const traceColor = (groups.length > 1 || sub.datasets.length === 1)
+                ? groupColor : PALETTE[subIndex % PALETTE.length];
+
+            traces.push({
+                y: values,
+                type: 'violin',
+                name: traceName,
+                side: 'positive',
+                box: { visible: true },
+                meanline: { visible: false },
+                points: 'all',
+                jitter: 0.4,
+                pointpos: -1.5,
+                marker: { color: traceColor, size: 4, opacity: 0.6 },
+                line: { color: traceColor },
+                fillcolor: traceColor,
+                opacity: 0.6,
+            });
+        });
+    });
+
+    return {
+        traces,
+        layout: {
+            title: `Raincloud Plot of ${getMetricLabel(metric)}`,
+            yaxis: { title: getMetricLabel(metric), automargin: true },
+            violinmode: 'group',
         }
     };
 }

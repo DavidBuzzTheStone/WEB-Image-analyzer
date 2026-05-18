@@ -25,6 +25,7 @@ const initialState = {
     dotSize: 8,
     jitterWidth: 0,
     fontSize: 12,
+    logScale: false,
     projectNotes: '',
     savedComparisons: [],
     savedThresholds: [],
@@ -69,7 +70,12 @@ export const state = {
         currentState.fontSize = size;
         state.notify('graph_settings_change');
     },
-    
+
+    setLogScale: (v) => {
+        currentState.logScale = !!v;
+        state.notify('graph_settings_change');
+    },
+
     setProjectNotes: (text) => {
         currentState.projectNotes = text;
         state.notify('project_meta_update'); 

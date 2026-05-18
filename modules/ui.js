@@ -196,6 +196,12 @@ function renderGraphSettings(stateData) {
                         <input type="range" min="0" max="0.5" step="0.05" class="range-input" id="jitter-input" style="width:100%">
                     </div>
                 </div>
+                <div class="input-pair-group" id="log-scale-row">
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                        <input type="checkbox" id="log-scale-input">
+                        <span class="label-small" style="margin:0">Log Scale (Y)</span>
+                    </label>
+                </div>
             </div>
         `;
     }
@@ -237,6 +243,13 @@ function renderGraphSettings(stateData) {
         
         container.querySelector('#dot-size-label').innerText = `Dot Size: ${stateData.dotSize}px`;
         container.querySelector('#jitter-label').innerText = `Jitter Width: ${stateData.jitterWidth}`;
+    }
+
+    // Bind Log Scale
+    const logScaleInput = container.querySelector('#log-scale-input');
+    logScaleInput.onchange = (e) => state.setLogScale(e.target.checked);
+    if (document.activeElement !== logScaleInput) {
+        logScaleInput.checked = stateData.logScale;
     }
 }
 
@@ -564,10 +577,8 @@ function updateControls(state) {
     // Aggregation Controls Visibility & State
     const aggControls = document.getElementById('aggregation-controls');
     // "only available when grouped by well or parameter" AND not histogram/bar AND not box
-    if ((state.viewMode === 'well' || state.viewMode === 'parameter') && 
-        state.graphType !== 'histogram' && 
-        state.graphType !== 'bar' &&
-        state.graphType !== 'box') {
+    if ((state.viewMode === 'well' || state.viewMode === 'parameter') &&
+        !['histogram', 'bar', 'box', 'violin', 'raincloud'].includes(state.graphType)) {
         aggControls.style.display = 'block';
     } else {
         aggControls.style.display = 'none';

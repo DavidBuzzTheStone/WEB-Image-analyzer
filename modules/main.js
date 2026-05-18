@@ -56,9 +56,9 @@ async function init() {
             
             try {
                 renderChart(
-                    'chart-container', 
-                    groupsToPlot, 
-                    appState.aggregationMode, 
+                    'chart-container',
+                    groupsToPlot,
+                    appState.aggregationMode,
                     appState.viewMode,
                     appState.datasetColors,
                     getIsDarkMode(),
@@ -67,7 +67,8 @@ async function init() {
                     appState.graphMetric,
                     appState.dotSize,
                     appState.jitterWidth,
-                    appState.fontSize
+                    appState.fontSize,
+                    appState.logScale
                 );
             } catch (err) {
                 console.error('Error rendering Chart:', err);
