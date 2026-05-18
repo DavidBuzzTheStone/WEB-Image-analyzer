@@ -22,6 +22,39 @@ export function setupUIListeners() {
         });
     });
 
+    // Test Data Loader
+    document.getElementById('load-test-data-btn')?.addEventListener('click', () => {
+        const createDummySet = (id, param, well, count, meanInt, stdInt, meanArea, stdArea) => {
+            const data = [];
+            for (let i = 0; i < count; i++) {
+                const u1 = Math.max(0.0001, Math.random()); 
+                const u2 = Math.random();
+                const z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+                const z1 = Math.sqrt(-2.0 * Math.log(u1)) * Math.sin(2.0 * Math.PI * u2);
+                
+                data.push({
+                    IntegratedInt: Math.max(0, meanInt + z0 * stdInt),
+                    NArea: Math.max(1, Math.round(meanArea + z1 * stdArea))
+                });
+            }
+            return {
+                id: id,
+                metadata: { parameter: param, well: well, imageNumber: 1, originalName: id + '.csv' },
+                data: data,
+                enabled: true
+            };
+        };
+
+        const testDatasets = [
+            createDummySet('test_control', 'Control', 'A1', 2000, 2500, 500, 15, 3),
+            createDummySet('test_treat1', 'Treatment 1', 'B1', 2000, 4500, 1200, 18, 4),
+            createDummySet('test_treat2', 'Treatment 2', 'C1', 2000, 1500, 300, 10, 2)
+        ];
+        
+        const current = state.getState().datasets;
+        state.setDatasets([...current, ...testDatasets]);
+    });
+
     // Comparison Mode
     const compareBtn = document.getElementById('compare-mode-btn');
     compareBtn.addEventListener('click', () => {
