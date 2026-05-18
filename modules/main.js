@@ -1,14 +1,14 @@
 /**
  * Main Application Entry Point
  */
-import { parseFilename, parseCSV } from './parser.js';
-import { state } from './state.js';
-import { renderUI, setupUIListeners, setupThemeToggle, getIsDarkMode } from './ui.js';
-import { renderChart } from './charts.js';
-import { getGroups, getSelectedGroups } from './state.js';
-import { initUpload } from './upload.js';
+import { parseFilename, parseCSV } from './parser.js?v=2';
+import { state } from './state.js?v=2';
+import { renderUI, setupUIListeners, setupThemeToggle, getIsDarkMode } from './ui.js?v=2';
+import { renderChart } from './charts.js?v=2';
+import { getGroups, getSelectedGroups } from './state.js?v=2';
+import { initUpload } from './upload.js?v=2';
 
-import { setupProjectListeners, loadAndRestoreProject } from './project_ui.js';
+import { setupProjectListeners, loadAndRestoreProject } from './project_ui.js?v=2';
 
 // Initialize
 async function init() {
@@ -51,7 +51,8 @@ async function init() {
         console.log(`Groups to plot: ${groupsToPlot.length}`);
 
         if (groupsToPlot.length > 0) {
-            // Explicitly clear placeholder
+            // Purge old Plotly chart before clearing (prevents ResizeObserver re-render)
+            try { Plotly.purge('chart-container'); } catch(e) {}
             document.getElementById('chart-container').innerHTML = '';
             
             try {
@@ -72,6 +73,11 @@ async function init() {
                 );
             } catch (err) {
                 console.error('Error rendering Chart:', err);
+                document.getElementById('chart-container').innerHTML = `
+                    <div class="placeholder-chart">
+                        <p style="color:red">Chart error: ${err.message}</p>
+                    </div>
+                `;
             }
         } else {
             // Clear chart or show placeholder
