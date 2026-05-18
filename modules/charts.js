@@ -156,6 +156,14 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
         }
     } catch (e) {
         console.error("Error building chart", e);
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.innerHTML = `
+                <div class="placeholder-chart">
+                    <p style="color: #ef4444; text-align: center;">Error rendering ${graphType} plot.<br><span style="font-size: 0.8em; color: var(--text-muted);">The data may be incompatible or contain invalid values.</span></p>
+                </div>
+            `;
+        }
         return;
     }
 
@@ -841,10 +849,13 @@ function calculateSD(arr, meanVal) {
 }
 
 function getMetricValue(row, metric) {
+    const intVal = row.IntegratedInt !== undefined ? Number(row.IntegratedInt) : 0;
+    const areaVal = row.NArea !== undefined ? Number(row.NArea) : 0;
+    
     switch (metric) {
-        case 'int': return row.IntegratedInt;
-        case 'area': return row.NArea;
-        case 'density': return row.NArea !== 0 ? row.IntegratedInt / row.NArea : 0;
+        case 'int': return isNaN(intVal) ? 0 : intVal;
+        case 'area': return isNaN(areaVal) ? 0 : areaVal;
+        case 'density': return (areaVal !== 0 && !isNaN(areaVal) && !isNaN(intVal)) ? intVal / areaVal : 0;
         default: return 0;
     }
 }

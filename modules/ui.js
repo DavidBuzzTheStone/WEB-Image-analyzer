@@ -8,16 +8,16 @@ import { getDefaultColor, isPointIncluded } from './charts.js';
 export function setupUIListeners() {
     // View Mode Toggles
     document.querySelectorAll('#view-mode-toggle .toggle-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const mode = e.target.dataset.value;
+        btn.addEventListener('click', () => {
+            const mode = btn.dataset.value;
             state.setViewMode(mode);
         });
     });
 
     // Aggregation Toggles
     document.querySelectorAll('#agg-mode-toggle .toggle-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const mode = e.target.dataset.value;
+        btn.addEventListener('click', () => {
+            const mode = btn.dataset.value;
             state.setAggregationMode(mode);
         });
     });
@@ -78,8 +78,8 @@ export function setupUIListeners() {
 
     // Graph Type Toggles
     document.querySelectorAll('#graph-type-toggle .toggle-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const mode = e.target.dataset.value;
+        btn.addEventListener('click', () => {
+            const mode = btn.dataset.value;
             state.setGraphType(mode);
         });
     });
