@@ -219,7 +219,16 @@ export function renderChart(containerId, groups, aggregationMode, viewMode, data
         scrollZoom: true
     };
 
-    Plotly.newPlot(containerId, chartData.traces, layout, config);
+    try {
+        Promise.resolve(Plotly.newPlot(containerId, chartData.traces, layout, config))
+            .catch(err => {
+                console.error("Plotly Promise Rejection:", err);
+                alert(`Plotly Error rendering ${graphType} plot: ` + (err.message || err));
+            });
+    } catch (err) {
+        console.error("Plotly Sync Error:", err);
+        alert(`Plotly Error rendering ${graphType} plot: ` + (err.message || err));
+    }
 }
 
 // --- BUILDERS ---
@@ -512,6 +521,7 @@ function buildViolinPlot(groups, viewMode, datasetColors, thresholds, metric, lo
                 ? groupColor : PALETTE[subIndex % PALETTE.length];
 
             traces.push({
+                x: Array(values.length).fill(traceName),
                 y: values,
                 type: 'violin',
                 name: traceName,
@@ -563,6 +573,7 @@ function buildRaincloudPlot(groups, viewMode, datasetColors, thresholds, metric,
                 ? groupColor : PALETTE[subIndex % PALETTE.length];
 
             traces.push({
+                x: Array(values.length).fill(traceName),
                 y: values,
                 type: 'violin',
                 name: traceName,
