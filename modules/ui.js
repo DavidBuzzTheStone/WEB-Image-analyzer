@@ -53,6 +53,15 @@ export function setupUIListeners() {
         
         const current = state.get().datasets;
         state.setDatasets([...current, ...testDatasets]);
+        
+        // Auto-select and visualize the dummy data instantly
+        const newIds = testDatasets.map(d => d.id);
+        const currentSelected = state.get().selectedIds || [];
+        state.setSelectedIds([...currentSelected, ...newIds]);
+        
+        // Force graph view
+        state.setGraphType('violin');
+        state.setComparisonMode(true);
     });
 
     // Comparison Mode
