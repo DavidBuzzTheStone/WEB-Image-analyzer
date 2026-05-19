@@ -51,7 +51,7 @@ export function setupUIListeners() {
             createDummySet('test_treat2', 'Treatment 2', 'C1', 2000, 1500, 300, 10, 2)
         ];
         
-        const current = state.getState().datasets;
+        const current = state.get().datasets;
         state.setDatasets([...current, ...testDatasets]);
     });
 
